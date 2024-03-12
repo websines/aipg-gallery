@@ -1,73 +1,62 @@
-.styled-button {
-    align-items: center;
-    background-color: var(--btn-primary);
-    border-radius: 4px;
-    border: 1px solid rgb(204, 204, 204);
-    color: white;
-    display: flex;
-    flex-direction: row;
-    font-size: 14px;
-    font-weight: 500;
-    gap: 4px;
-    height: var(--input-element-h);
-    justify-content: center;
-    min-width: 40px;
-    padding: 2px 8px;
-  
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+import clsx from "clsx";
+import * as React from "react";
+
+import styles from "./button.module.css";
+
+interface ButtonProps {
+  children?: React.ReactNode;
+  className?: string;
+  disabled?: boolean;
+  id?: string;
+  onClick?: () => void;
+  size?: string;
+  theme?: string;
+  title?: string;
+  width?: string;
+  style?: object;
+}
+
+export function Button(props: ButtonProps) {
+  const {
+    children,
+    id,
+    className,
+    disabled = false,
+    onClick = () => {},
+    size,
+    theme,
+    style = {},
+    width,
+    ...rest
+  } = props;
+
+  const s = { ...style, touchAction: "manipulation" };
+
+  if (width) {
+    // @ts-ignore
+    s.width = width;
   }
-  
-  .styled-button:hover {
-    background-color: var(--btn-primary-hover);
-  }
-  
-  .styled-button-secondary {
-    background-color: var(--btn-secondary);
-  }
-  
-  .styled-button-secondary:hover {
-    background-color: var(--btn-secondary-hover);
-  }
-  
-  .styled-button:active {
-    transform: scale(0.98);
-  }
-  
-  .styled-button-small {
-    height: 34px;
-    padding: 0px 6px;
-  }
-  
-  .styled-button-square {
-    cursor: pointer;
-    height: 36px;
-    min-width: 36px;
-    padding: 0;
-    width: 36px;
-  }
-  
-  .styled-button-square-small {
-    cursor: pointer;
-    height: 34px;
-    min-width: 34px;
-    padding: 0;
-    width: 34px;
-  }
-  
-  .styled-button-disabled {
-    background-color: #bdbdbd;
-  }
-  
-  .styled-button-disabled:hover {
-    background-color: #bdbdbd;
-  }
-  
-  @media (min-width: 800px) {
-    .styled-button {
-      height: 30px;
-      min-width: unset;
-      padding: 4px;
-    }
-  }
+
+  return (
+    <button
+      id={id}
+      disabled={disabled}
+      className={clsx(styles["styled-button"], className, {
+        [styles["styled-button-secondary"]]: theme === "secondary",
+        [styles["styled-button-small"]]: size === "small",
+        [styles["styled-button-square"]]: size === "square",
+        [styles["styled-button-square-small"]]: size === "square-small",
+        [styles["styled-button-disabled"]]: disabled,
+      })}
+      onClick={(e) => {
+        if (e) e.preventDefault();
+        if (disabled) return;
+        onClick();
+      }}
+      style={{ ...s }}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
