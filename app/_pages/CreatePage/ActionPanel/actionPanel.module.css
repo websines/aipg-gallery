@@ -1,0 +1,32 @@
+.CreateImageActionPanel {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.FixedPanel {
+  background-color: var(--body-color);
+  left: 0;
+  right: 0;
+  top: 48px;
+  width: 100%;
+  position: fixed;
+}
+
+/* @media (min-width: 640px) {
+  .CreateImageActionPanel {
+    width: 100%;
+    gap: 4px;
+    margin: 4px 0 8px 0;
+  }
+} */
+
+.error-btn {
+  background-color: var(--body-color);
+  border-color: rgb(204, 204, 204);
+  color: var(--main-color);
+}
