@@ -86,7 +86,7 @@ export interface CreateImageParamsObject {
   n: number
   post_processing: string[]
   return_control_map?: boolean
-  sampler_name?: string // Optional due to controlNet
+  sampler_name?: string
   seed?: string
   steps: number
   tiling: boolean
