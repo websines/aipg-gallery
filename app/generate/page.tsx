@@ -1,4 +1,4 @@
-import { basePath } from "BASE_PATH";
+import { basePath } from "@/BASE_PATH";
 import PendingPanel from "app/_modules/PendingPanel";
 import CreatePage from "app/_pages/CreatePage";
 import styles from "./page.module.css";
