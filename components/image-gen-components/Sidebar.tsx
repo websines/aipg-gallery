@@ -1,7 +1,10 @@
-import React from "react";
+"use client";
+
+import { useState } from "react";
+import { Slider } from "@/components/ui/slider";
 
 const Sidebar = () => {
-  return <div>Sidebar</div>;
+  return <></>;
 };
 
 export default Sidebar;

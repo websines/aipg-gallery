@@ -20,7 +20,7 @@ const Navbar = () => {
     <>
       <header className="top-0 p-4 flex flex-row justify-between items-center">
         <div className="text-black font-semibold">AIPG ART</div>
-        <NavigationMenu>
+        <NavigationMenu className="md:block hidden">
           <NavigationMenuList>
             <NavigationMenuItem>
               <Link href="/" legacyBehavior passHref>
