@@ -15,7 +15,6 @@ function SliderWithCounter({ min, max, step = 1, ...rest }: any) {
 
   const handleChange = (newValue: any) => {
     setSliderValue(newValue);
-    console.log("sliderValue:", sliderValue, "Type:", typeof sliderValue);
   };
 
   const handleIncrement = () => {

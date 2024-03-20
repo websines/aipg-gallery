@@ -12,14 +12,15 @@ import {
 } from "@/components/ui/navigation-menu";
 import Link from "next/link";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserNav } from "../homepage-components/UserNav";
 
 const Navbar = () => {
   return (
     <>
       <header className="top-0 p-4 flex flex-row justify-between items-center">
-        <div className="text-black font-semibold">AIPG ART</div>
+        <Link href="/" className="text-black font-semibold">
+          AIPG ART
+        </Link>
         <NavigationMenu className="md:block hidden">
           <NavigationMenuList>
             <NavigationMenuItem>
