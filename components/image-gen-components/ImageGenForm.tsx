@@ -63,6 +63,7 @@ const dpmSamplers = [
   "k_dpmpp_sde",
 ];
 
+const models = ["stable diffusion"];
 const ImageGenForm = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -323,6 +324,42 @@ const ImageGenForm = () => {
                       value={batchSize}
                       step={1}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+
+          <FormField
+            control={form.control}
+            name="sampler"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel className="flex flex-row items-center gap-2">
+                    Sampler
+                    <ToolTipComponent tooltipText="Your Sampler" />
+                  </FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a sampler" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[200px]">
+                        <SelectGroup>
+                          <SelectLabel>Sampler Lite</SelectLabel>
+                          {samplerListLite.map((list, idx) => (
+                            <SelectItem value={list} key={idx}>
+                              {list}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

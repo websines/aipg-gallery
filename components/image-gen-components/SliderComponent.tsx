@@ -36,7 +36,7 @@ function SliderWithCounter({ min, max, step = 1, ...rest }: any) {
               defaultValue={[min]}
               max={max}
               step={step}
-              className="w-[250px]"
+              className="w-[250px] md:flex hidden"
               onValueChange={(value) => handleChange(value)}
             />
           </TooltipTrigger>
