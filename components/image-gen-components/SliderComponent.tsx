@@ -10,11 +10,13 @@ import {
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
-function SliderWithCounter({ min, max, step = 1, ...rest }: any) {
+function SliderWithCounter({ min, max, step = 1, onChange, value }: any) {
   const [sliderValue, setSliderValue] = useState(min);
 
   const handleChange = (newValue: any) => {
+    console.log("SliderWithCounter - newValue:", newValue);
     setSliderValue(newValue);
+    onChange([newValue]);
   };
 
   const handleIncrement = () => {
@@ -26,7 +28,7 @@ function SliderWithCounter({ min, max, step = 1, ...rest }: any) {
   };
 
   return (
-    <div className="flex flex-row justify-between items-center ">
+    <div className="flex flex-row justify-between items-center gap-2 ">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger type="button">
@@ -35,8 +37,8 @@ function SliderWithCounter({ min, max, step = 1, ...rest }: any) {
               defaultValue={[min]}
               max={max}
               step={step}
+              onChange={handleChange}
               className="w-[250px] md:flex hidden"
-              onValueChange={(value) => handleChange(value)}
             />
           </TooltipTrigger>
           <TooltipContent sideOffset={5}>{sliderValue}</TooltipContent>
@@ -46,7 +48,7 @@ function SliderWithCounter({ min, max, step = 1, ...rest }: any) {
         <Button onClick={handleIncrement} variant={"outline"} type="button">
           +
         </Button>
-        <Input value={sliderValue} />
+        <Input value={sliderValue} className="md:w-[60px]" />
         <Button onClick={handleDecrement} variant={"outline"} type="button">
           -
         </Button>

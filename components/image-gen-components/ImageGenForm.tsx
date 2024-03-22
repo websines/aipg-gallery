@@ -111,10 +111,6 @@ const ImageGenForm = () => {
     },
   });
 
-  useEffect(() => {
-    console.log(batchSize);
-  }, [batchSize]);
-
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
     console.log(JSON.stringify(data));
     toast({
@@ -226,10 +222,9 @@ const ImageGenForm = () => {
                       min={1}
                       max={20}
                       onChange={(value: any) => {
-                        setBatchSize([value]);
+                        console.log("FormField - onValueChange:", value);
                         field.onChange(value);
                       }}
-                      value={batchSize}
                       step={1}
                     />
                   </FormControl>
@@ -526,7 +521,7 @@ const ImageGenForm = () => {
             />
           </div>
           <Button type="submit" className="my-8 ">
-            Generate {batchSize} images(s)
+            Generate images(s)
           </Button>
         </form>
       </Form>
