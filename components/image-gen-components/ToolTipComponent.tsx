@@ -10,7 +10,7 @@ const ToolTipComponent = ({ tooltipText }: any) => {
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger type="button">
           <Info className="w-4 h-4" />
         </TooltipTrigger>
         <TooltipContent>

@@ -29,7 +29,7 @@ function SliderWithCounter({ min, max, step = 1, ...rest }: any) {
     <div className="flex flex-row justify-between items-center ">
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger>
+          <TooltipTrigger type="button">
             <Slider
               value={[sliderValue]}
               defaultValue={[min]}

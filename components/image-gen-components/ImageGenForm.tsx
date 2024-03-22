@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +18,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -112,6 +111,10 @@ const ImageGenForm = () => {
     },
   });
 
+  useEffect(() => {
+    console.log(batchSize);
+  }, [batchSize]);
+
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
     console.log(JSON.stringify(data));
     toast({
@@ -129,7 +132,7 @@ const ImageGenForm = () => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(handleSubmit)}
-          className="my-8 p-4 md:w-[60%] w-[80%] flex flex-col gap-2"
+          className="my-2 md:my-8 p-4 flex flex-col gap-2"
         >
           <FormField
             control={form.control}
@@ -222,7 +225,7 @@ const ImageGenForm = () => {
                     <SliderWithCounter
                       min={1}
                       max={20}
-                      onValueChange={(value: any) => {
+                      onChange={(value: any) => {
                         setBatchSize([value]);
                         field.onChange(value);
                       }}
@@ -253,7 +256,6 @@ const ImageGenForm = () => {
                         setSteps([value]);
                         field.onChange([value]);
                       }}
-                      value={batchSize}
                       step={1}
                     />
                   </FormControl>
@@ -524,7 +526,7 @@ const ImageGenForm = () => {
             />
           </div>
           <Button type="submit" className="my-8 ">
-            Generate
+            Generate {batchSize} images(s)
           </Button>
         </form>
       </Form>

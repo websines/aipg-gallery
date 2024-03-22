@@ -18,7 +18,7 @@ const Navbar = () => {
   return (
     <>
       <header className="top-0 p-4 flex flex-row justify-between items-center">
-        <Link href="/" className="text-black font-semibold">
+        <Link href="/" className="text-black dark:text-white font-semibold">
           AIPG ART
         </Link>
         <NavigationMenu className="md:block hidden">
