@@ -1,0 +1,3 @@
+type Photo = {
+    url: string
+}
