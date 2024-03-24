@@ -12,12 +12,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { signUpWithEmailAndPassword } from "@/actions/auth-actions";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { LoadingSpinner } from "../misc-components/LoadingSpinner";
+import { redirect } from "next/navigation";
 
 const FormSchema = z
   .object({
@@ -35,6 +35,7 @@ const FormSchema = z
   });
 export default function RegisterForm() {
   const [isPending, startTransition] = useTransition();
+  const [message, setMessage] = useState("");
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -45,15 +46,16 @@ export default function RegisterForm() {
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
     startTransition(async () => {
       const response = await signUpWithEmailAndPassword(data);
       const { error } = JSON.parse(response);
 
       if (error?.message) {
-        toast.error(error.message);
+        setMessage(error.message);
       } else {
-        toast.success("Successfully logged in!");
+        setMessage("Successfully Registered!");
+        redirect("/");
       }
     });
   }
@@ -117,6 +119,7 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
+        {message && <p className="text-red text-md font-medium">{message}</p>}
         <Button type="submit" className="w-full flex gap-2 flex-row">
           Register {isPending && <LoadingSpinner className="text-black" />}
         </Button>

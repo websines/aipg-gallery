@@ -16,8 +16,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { signInWithEmailAndPassword } from "@/actions/auth-actions";
 import { toast } from "sonner";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { LoadingSpinner } from "../misc-components/LoadingSpinner";
+import { redirect } from "next/navigation";
 
 const FormSchema = z.object({
   email: z.string().email(),
@@ -28,6 +29,7 @@ const FormSchema = z.object({
 
 export default function SignInForm() {
   const [isPending, startTransition] = useTransition();
+  const [message, setMessage] = useState("");
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -43,9 +45,10 @@ export default function SignInForm() {
       const { error } = JSON.parse(response);
 
       if (error?.message) {
-        toast.error(error.message);
+        setMessage(error.message);
       } else {
-        toast.success("Successfully registered");
+        setMessage("Successfully LoggedIn!");
+        redirect("/");
       }
     });
   }
@@ -90,6 +93,7 @@ export default function SignInForm() {
             </FormItem>
           )}
         />
+        {message && <p className="text-red text-md font-medium">{message}</p>}
         <Button type="submit" className="w-full flex gap-2  flex-row">
           Log In {isPending && <LoadingSpinner className="text-black" />}
         </Button>

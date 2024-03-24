@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,7 +39,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { readUserSession } from "@/actions/authCheck";
+import { User } from "@supabase/supabase-js";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -93,7 +93,7 @@ const PostProcessorOptions: Option[] = [
   { value: "strip_background", label: "Strip Background" },
 ];
 
-const ImageGenForm = async () => {
+const ImageGenForm = () => {
   const [generateDisabled, setGenerateDisable] = useState(true);
   const [batchSize, setBatchSize] = useState([1]);
   const [steps, setSteps] = useState([15]);
@@ -121,12 +121,11 @@ const ImageGenForm = async () => {
     },
   });
 
-  const {
-    data: { session },
-  } = await readUserSession();
-  if (session) {
-    setGenerateDisable(false);
-  }
+  // useEffect(() => {
+  //   if (user) {
+  //     setGenerateDisable(!generateDisabled);
+  //   }
+  // }, [user]);
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
     console.log(JSON.stringify(data));

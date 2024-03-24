@@ -1,22 +1,20 @@
-"use client";
-
 import ImageCarousel from "@/components/image-gen-components/ImageCarousel";
 import ImageGenForm from "@/components/image-gen-components/ImageGenForm";
 import { AlertDestructive } from "@/components/misc-components/AlertDestructive";
+import AlertDialogComponent from "@/components/misc-components/AlertDialogComponent";
+import createSupabaseServerClient from "@/lib/supabase/server";
 
-const page = () => {
-  const user = true;
+const page = async () => {
+  // const supabase = await createSupabaseServerClient();
+
+  // const {
+  //   data: { user },
+  // } = await supabase.auth.getUser();
+  const user = false;
+
   return (
     <div className="w-full flex flex-col gap-4 items-center justify-center p-4">
-      {!user && (
-        <div className="md:w-[50%]">
-          <AlertDestructive
-            text="You need to log in to use this!"
-            title="Not logged in!"
-            className="bg-red-500 text-white"
-          />
-        </div>
-      )}
+      {!user && <AlertDialogComponent />}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full ">
         <div className="flex flex-col justify-center items-center my-8 w-full ">
           <ImageGenForm />
