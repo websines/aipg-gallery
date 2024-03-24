@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { signUpWithEmailAndPassword } from "@/actions/auth-actions";
 
 const FormSchema = z
   .object({
@@ -41,15 +42,15 @@ export default function RegisterForm() {
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
+    const response = await signUpWithEmailAndPassword(data);
+    const { error } = JSON.parse(response);
+
+    if (error?.message) {
+      toast.error(error.message);
+    } else {
+      toast.success("Successfully registered");
+    }
   }
 
   return (

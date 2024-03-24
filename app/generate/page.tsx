@@ -18,10 +18,10 @@ const page = () => {
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full ">
-        <div className="flex flex-col justify-center items-center my-8 w-full order-2 md:order-1">
+        <div className="flex flex-col justify-center items-center my-8 w-full ">
           <ImageGenForm />
         </div>
-        <div className="md:my-8 p-4 order-1 md:order-2">
+        <div className="md:my-8 p-4 ">
           <ImageCarousel />
         </div>
       </div>

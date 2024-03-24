@@ -83,7 +83,7 @@ export default function SignInForm() {
           )}
         />
         <Button type="submit" className="w-full flex gap-2">
-          SignIn
+          Log In
         </Button>
       </form>
     </Form>

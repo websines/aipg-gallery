@@ -10,7 +10,7 @@ export function AuthForm() {
     <div className="w-full space-y-5 p-4">
       <Tabs defaultValue="signin" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="signin">SignIn</TabsTrigger>
+          <TabsTrigger value="signin">Log In</TabsTrigger>
           <TabsTrigger value="register">Register</TabsTrigger>
         </TabsList>
         <TabsContent value="signin">

@@ -39,6 +39,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { readUserSession } from "@/actions/auth-actions";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -92,7 +93,8 @@ const PostProcessorOptions: Option[] = [
   { value: "strip_background", label: "Strip Background" },
 ];
 
-const ImageGenForm = () => {
+const ImageGenForm = async () => {
+  const [generateDisabled, setGenerateDisable] = useState(true);
   const [batchSize, setBatchSize] = useState([1]);
   const [steps, setSteps] = useState([15]);
   const [width, setWidth] = useState([512]);
@@ -118,6 +120,13 @@ const ImageGenForm = () => {
       tiling: false,
     },
   });
+
+  const {
+    data: { session },
+  } = await readUserSession();
+  if (session) {
+    setGenerateDisable(false);
+  }
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
     console.log(JSON.stringify(data));
@@ -534,7 +543,11 @@ const ImageGenForm = () => {
                   }}
                 />
               </div>
-              <Button type="submit" className="my-8 ">
+              <Button
+                type="submit"
+                className="my-8 "
+                disabled={generateDisabled}
+              >
                 Generate images(s)
               </Button>
             </form>

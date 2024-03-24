@@ -12,17 +12,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogIn, LogOut, User, User2Icon } from "lucide-react";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { AuthForm } from "../auth-components/AuthForm";
+import { SignOutUser, readUserSession } from "@/actions/auth-actions";
 
 export function UserNav() {
+  // const {
+  //   data: { session },
+  // } = await readUserSession();
   const user = false;
 
   return (
@@ -42,9 +39,10 @@ export function UserNav() {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">shadcn</p>
+                <p className="text-sm font-medium leading-none">User</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  m@example.com
+                  {/* {session?.user.email} */}
+                  something@gmail.com
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -58,7 +56,7 @@ export function UserNav() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem className="cursor-pointer" onClick={SignOutUser}>
               Log out
               <DropdownMenuShortcut>
                 <LogOut className="w-4 h-4" />
