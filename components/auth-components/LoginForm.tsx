@@ -11,9 +11,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { signInWithEmailAndPassword } from "@/actions/auth-actions";
+import { toast } from "sonner";
+import { useTransition } from "react";
+import { LoadingSpinner } from "../misc-components/LoadingSpinner";
 
 const FormSchema = z.object({
   email: z.string().email(),
@@ -23,6 +27,8 @@ const FormSchema = z.object({
 });
 
 export default function SignInForm() {
+  const [isPending, startTransition] = useTransition();
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -32,13 +38,15 @@ export default function SignInForm() {
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
+    startTransition(async () => {
+      const response = await signInWithEmailAndPassword(data);
+      const { error } = JSON.parse(response);
+
+      if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.success("Successfully registered");
+      }
     });
   }
 
@@ -82,8 +90,8 @@ export default function SignInForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full flex gap-2">
-          Log In
+        <Button type="submit" className="w-full flex gap-2  flex-row">
+          Log In {isPending && <LoadingSpinner className="text-black" />}
         </Button>
       </form>
     </Form>

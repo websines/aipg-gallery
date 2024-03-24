@@ -27,7 +27,6 @@ const Home = () => {
   });
 
   const photos = data?.pages.flatMap((page) => page.results);
-  console.log(data);
 
   useEffect(() => {
     if (!hasNextPage) return;

@@ -5,7 +5,6 @@ import * as z from "zod";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -17,6 +16,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { signUpWithEmailAndPassword } from "@/actions/auth-actions";
+import { useTransition } from "react";
+import { LoadingSpinner } from "../misc-components/LoadingSpinner";
 
 const FormSchema = z
   .object({
@@ -33,6 +34,8 @@ const FormSchema = z
     path: ["confirm"],
   });
 export default function RegisterForm() {
+  const [isPending, startTransition] = useTransition();
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -42,15 +45,17 @@ export default function RegisterForm() {
     },
   });
 
-  async function onSubmit(data: z.infer<typeof FormSchema>) {
-    const response = await signUpWithEmailAndPassword(data);
-    const { error } = JSON.parse(response);
+  function onSubmit(data: z.infer<typeof FormSchema>) {
+    startTransition(async () => {
+      const response = await signUpWithEmailAndPassword(data);
+      const { error } = JSON.parse(response);
 
-    if (error?.message) {
-      toast.error(error.message);
-    } else {
-      toast.success("Successfully registered");
-    }
+      if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.success("Successfully logged in!");
+      }
+    });
   }
 
   return (
@@ -112,8 +117,8 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full flex gap-2">
-          Register
+        <Button type="submit" className="w-full flex gap-2 flex-row">
+          Register {isPending && <LoadingSpinner className="text-black" />}
         </Button>
       </form>
     </Form>
