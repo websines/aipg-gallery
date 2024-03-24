@@ -1,8 +1,8 @@
-import createSupabaseServerClient from "@/lib/supabase/server"
-import { redirect } from "next/navigation";
+import { createSupabaseClient } from "@/lib/supabase/client";
+
 
 export async function readUserSession(){
-    const supabase = await createSupabaseServerClient()
+    const supabase = await createSupabaseClient()
 
     return supabase.auth.getSession()
 }
