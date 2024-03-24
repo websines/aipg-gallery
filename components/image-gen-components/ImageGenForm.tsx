@@ -39,7 +39,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { readUserSession } from "@/actions/auth-actions";
+import { readUserSession } from "@/actions/authCheck";
 
 const optionSchema = z.object({
   label: z.string(),

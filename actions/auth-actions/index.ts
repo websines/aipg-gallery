@@ -25,13 +25,6 @@ export async function signInWithEmailAndPassword(data: {
 }
 
 
-export async function readUserSession(){
-    const supabase = await createSupabaseServerClient()
-
-    return supabase.auth.getSession()
-}
-
-
 export async function SignOutUser() {
     const supabase = await createSupabaseServerClient();
 
