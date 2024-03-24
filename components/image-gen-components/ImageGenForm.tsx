@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +31,14 @@ import {
 
 import ToolTipComponent from "./ToolTipComponent";
 import SliderWithCounter from "./SliderComponent";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -125,406 +133,414 @@ const ImageGenForm = () => {
 
   return (
     <>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(handleSubmit)}
-          className="my-2 md:my-8 p-4 flex flex-col gap-2"
-        >
-          <FormField
-            control={form.control}
-            name="postivePrompt"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel>Prompt</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="negativePrompt"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Negative Prompt{" "}
-                    <ToolTipComponent tooltipText="Exclude stuff from your image" />
-                  </FormLabel>
-                  <FormControl>
-                    <Input placeholder="negative prompts.." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="sampler"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Sampler
-                    <ToolTipComponent tooltipText="Your Sampler" />
-                  </FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a sampler" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
-                        <SelectGroup>
-                          <SelectLabel>Sampler Lite</SelectLabel>
-                          {samplerListLite.map((list, idx) => (
-                            <SelectItem value={list} key={idx}>
-                              {list}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                        <SelectGroup>
-                          <SelectLabel>DPM Samplers</SelectLabel>
-                          {dpmSamplers.map((list, idx) => (
-                            <SelectItem value={list} key={idx}>
-                              {list}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
+      <Card>
+        <CardHeader>
+          <CardTitle>Image Generator</CardTitle>
+          <CardDescription>Generate your favorite images</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="my-2 md:my-8 p-4 flex flex-col gap-2"
+            >
+              <FormField
+                control={form.control}
+                name="postivePrompt"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel>Prompt</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="negativePrompt"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Negative Prompt{" "}
+                        <ToolTipComponent tooltipText="Exclude stuff from your image" />
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="negative prompts.." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="sampler"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Sampler
+                        <ToolTipComponent tooltipText="Your Sampler" />
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a sampler" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[200px]">
+                            <SelectGroup>
+                              <SelectLabel>Sampler Lite</SelectLabel>
+                              {samplerListLite.map((list, idx) => (
+                                <SelectItem value={list} key={idx}>
+                                  {list}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                            <SelectGroup>
+                              <SelectLabel>DPM Samplers</SelectLabel>
+                              {dpmSamplers.map((list, idx) => (
+                                <SelectItem value={list} key={idx}>
+                                  {list}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
 
-          <FormField
-            control={form.control}
-            name="batchSize"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Batch size
-                    <ToolTipComponent tooltipText="Number of images" />
-                  </FormLabel>
-                  <FormControl>
-                    <SliderWithCounter
-                      min={1}
-                      max={20}
-                      onChange={(value: any) => {
-                        console.log("FormField - onValueChange:", value);
-                        field.onChange(value);
-                      }}
-                      step={1}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="steps"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Steps
-                    <ToolTipComponent tooltipText="Steps" />
-                  </FormLabel>
-                  <FormControl>
-                    <SliderWithCounter
-                      min={1}
-                      max={50}
-                      onValueChange={(value: any) => {
-                        setSteps([value]);
-                        field.onChange([value]);
-                      }}
-                      step={1}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="width"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Width
-                    <ToolTipComponent tooltipText="Width" />
-                  </FormLabel>
-                  <FormControl>
-                    <SliderWithCounter
-                      min={64}
-                      max={1024}
-                      onValueChange={(value: any) => {
-                        setWidth([value]);
-                        field.onChange([value]);
-                      }}
-                      value={batchSize}
-                      step={64}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="height"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Height
-                    <ToolTipComponent tooltipText="Height" />
-                  </FormLabel>
-                  <FormControl>
-                    <SliderWithCounter
-                      min={64}
-                      max={1024}
-                      onValueChange={(value: any) => {
-                        setHeight([value]);
-                        field.onChange([value]);
-                      }}
-                      value={batchSize}
-                      step={64}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="guidance"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Guidance
-                    <ToolTipComponent tooltipText="Guidance" />
-                  </FormLabel>
-                  <FormControl>
-                    <SliderWithCounter
-                      min={1}
-                      max={24}
-                      onValueChange={(value: any) => {
-                        setGuidance([value]);
-                        field.onChange([value]);
-                      }}
-                      value={batchSize}
-                      step={0.5}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="clipskip"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Clip Skip
-                    <ToolTipComponent tooltipText="Clip Skip" />
-                  </FormLabel>
-                  <FormControl>
-                    <SliderWithCounter
-                      min={1}
-                      max={10}
-                      onValueChange={(value: any) => {
-                        setClipSkip([value]);
-                        field.onChange([value]);
-                      }}
-                      value={batchSize}
-                      step={1}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
+              <FormField
+                control={form.control}
+                name="batchSize"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Batch size
+                        <ToolTipComponent tooltipText="Number of images" />
+                      </FormLabel>
+                      <FormControl>
+                        <SliderWithCounter
+                          min={1}
+                          max={20}
+                          onChange={(value: any) => {
+                            console.log("FormField - onValueChange:", value);
+                            field.onChange(value);
+                          }}
+                          step={1}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="steps"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Steps
+                        <ToolTipComponent tooltipText="Steps" />
+                      </FormLabel>
+                      <FormControl>
+                        <SliderWithCounter
+                          min={1}
+                          max={50}
+                          onValueChange={(value: any) => {
+                            setSteps([value]);
+                            field.onChange([value]);
+                          }}
+                          step={1}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="width"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Width
+                        <ToolTipComponent tooltipText="Width" />
+                      </FormLabel>
+                      <FormControl>
+                        <SliderWithCounter
+                          min={64}
+                          max={1024}
+                          onValueChange={(value: any) => {
+                            setWidth([value]);
+                            field.onChange([value]);
+                          }}
+                          value={batchSize}
+                          step={64}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="height"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Height
+                        <ToolTipComponent tooltipText="Height" />
+                      </FormLabel>
+                      <FormControl>
+                        <SliderWithCounter
+                          min={64}
+                          max={1024}
+                          onValueChange={(value: any) => {
+                            setHeight([value]);
+                            field.onChange([value]);
+                          }}
+                          value={batchSize}
+                          step={64}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="guidance"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Guidance
+                        <ToolTipComponent tooltipText="Guidance" />
+                      </FormLabel>
+                      <FormControl>
+                        <SliderWithCounter
+                          min={1}
+                          max={24}
+                          onValueChange={(value: any) => {
+                            setGuidance([value]);
+                            field.onChange([value]);
+                          }}
+                          value={batchSize}
+                          step={0.5}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="clipskip"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Clip Skip
+                        <ToolTipComponent tooltipText="Clip Skip" />
+                      </FormLabel>
+                      <FormControl>
+                        <SliderWithCounter
+                          min={1}
+                          max={10}
+                          onValueChange={(value: any) => {
+                            setClipSkip([value]);
+                            field.onChange([value]);
+                          }}
+                          value={batchSize}
+                          step={1}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
 
-          <FormField
-            control={form.control}
-            name="model"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Model
-                    <ToolTipComponent tooltipText="Image Generating Model" />
-                  </FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a sampler" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
-                        <SelectGroup>
-                          <SelectLabel>Sampler Lite</SelectLabel>
-                          {models.map((list, idx) => (
-                            <SelectItem value={list} key={idx}>
-                              {list}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="postprocessors"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel className="flex flex-row items-center gap-2">
-                    Post-Processors
-                    <ToolTipComponent tooltipText="Image Generating Model" />
-                  </FormLabel>
-                  <FormControl>
-                    <MultipleSelector
-                      selectFirstItem={false}
-                      defaultOptions={PostProcessorOptions}
-                      hidePlaceholderWhenSelected
-                      placeholder="Select one or more pre-processors"
-                      emptyIndicator={
-                        <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
-                          no results found.
-                        </p>
-                      }
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
+              <FormField
+                control={form.control}
+                name="model"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Model
+                        <ToolTipComponent tooltipText="Image Generating Model" />
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a sampler" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[200px]">
+                            <SelectGroup>
+                              <SelectLabel>Sampler Lite</SelectLabel>
+                              {models.map((list, idx) => (
+                                <SelectItem value={list} key={idx}>
+                                  {list}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="postprocessors"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Post-Processors
+                        <ToolTipComponent tooltipText="Image Generating Model" />
+                      </FormLabel>
+                      <FormControl>
+                        <MultipleSelector
+                          selectFirstItem={false}
+                          defaultOptions={PostProcessorOptions}
+                          hidePlaceholderWhenSelected
+                          placeholder="Select one or more pre-processors"
+                          emptyIndicator={
+                            <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
+                              no results found.
+                            </p>
+                          }
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-            <FormField
-              control={form.control}
-              name="karras"
-              render={({ field }) => {
-                return (
-                  <FormItem className="flex flex-row items-center justify-start gap-2">
-                    <FormLabel className="flex flex-row items-center gap-1 mt-2">
-                      Karras
-                      <ToolTipComponent tooltipText="Karras" />
-                    </FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
-            <FormField
-              control={form.control}
-              name="hires_fix"
-              render={({ field }) => {
-                return (
-                  <FormItem className="flex flex-row items-center justify-start gap-2">
-                    <FormLabel className="flex flex-row items-center gap-1 mt-2">
-                      Hi-res Fix
-                      <ToolTipComponent tooltipText="Hi-res fix" />
-                    </FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
-            <FormField
-              control={form.control}
-              name="nsfw"
-              render={({ field }) => {
-                return (
-                  <FormItem className="flex flex-row items-center justify-start gap-2">
-                    <FormLabel className="flex flex-row items-center gap-1 mt-2">
-                      NSFW
-                      <ToolTipComponent tooltipText="NSFW" />
-                    </FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
-            <FormField
-              control={form.control}
-              name="tiling"
-              render={({ field }) => {
-                return (
-                  <FormItem className="flex flex-row items-center justify-start gap-2">
-                    <FormLabel className="flex flex-row items-center gap-1 mt-2">
-                      Tiling
-                      <ToolTipComponent tooltipText="tiling" />
-                    </FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
-          </div>
-          <Button type="submit" className="my-8 ">
-            Generate images(s)
-          </Button>
-        </form>
-      </Form>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+                <FormField
+                  control={form.control}
+                  name="karras"
+                  render={({ field }) => {
+                    return (
+                      <FormItem className="flex flex-row items-center justify-start gap-2">
+                        <FormLabel className="flex flex-row items-center gap-1 mt-2">
+                          Karras
+                          <ToolTipComponent tooltipText="Karras" />
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="hires_fix"
+                  render={({ field }) => {
+                    return (
+                      <FormItem className="flex flex-row items-center justify-start gap-2">
+                        <FormLabel className="flex flex-row items-center gap-1 mt-2">
+                          Hi-res Fix
+                          <ToolTipComponent tooltipText="Hi-res fix" />
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="nsfw"
+                  render={({ field }) => {
+                    return (
+                      <FormItem className="flex flex-row items-center justify-start gap-2">
+                        <FormLabel className="flex flex-row items-center gap-1 mt-2">
+                          NSFW
+                          <ToolTipComponent tooltipText="NSFW" />
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="tiling"
+                  render={({ field }) => {
+                    return (
+                      <FormItem className="flex flex-row items-center justify-start gap-2">
+                        <FormLabel className="flex flex-row items-center gap-1 mt-2">
+                          Tiling
+                          <ToolTipComponent tooltipText="tiling" />
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              </div>
+              <Button type="submit" className="my-8 ">
+                Generate images(s)
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </>
   );
 };

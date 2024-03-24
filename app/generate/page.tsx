@@ -17,7 +17,7 @@ const page = () => {
           />
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full ">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full ">
         <div className="flex flex-col justify-center items-center my-8 w-full order-2 md:order-1">
           <ImageGenForm />
         </div>
