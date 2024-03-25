@@ -132,16 +132,20 @@ const ImageGenForm = () => {
 
   // const models: Model[] = ModelStore.getState().models;
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      const fetchData = async () => {
-        const data = await fetchAvailableModels();
-        setModels(data);
-      };
+    const fetchData = async () => {
+      const data = await fetchAvailableModels();
+      setModels(data);
+    };
 
+    // Call fetchData initially for the first load
+    fetchData();
+
+    // Set up the interval for subsequent calls
+    const intervalId = setInterval(() => {
       fetchData();
     }, 180000);
 
-    // Cleanup function: Clear the interval when the component unmounts
+    // Cleanup function: Clear the interval
     return () => clearInterval(intervalId);
   }, []);
 
