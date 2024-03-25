@@ -42,6 +42,7 @@ import {
 import { User } from "@supabase/supabase-js";
 import { ModelStore } from "@/stores/ModelStore";
 import fetchAvailableModels from "@/app/_api/fetchModels";
+import { Model } from "@/types";
 
 const optionSchema = z.object({
   label: z.string(),
