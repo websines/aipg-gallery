@@ -19,7 +19,7 @@ import { SignOutUser } from "@/actions/auth-actions";
 import { supabase } from "@/lib/supabase";
 
 export async function UserNav() {
-  const session = false;
+  const session = true;
   return (
     <Dialog>
       <DropdownMenu>

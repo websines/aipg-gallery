@@ -40,6 +40,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { User } from "@supabase/supabase-js";
+import { ModelStore } from "@/stores/ModelStore";
+import fetchAvailableModels from "@/app/_api/fetchModels";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -84,8 +86,6 @@ const dpmSamplers = [
   "k_dpmpp_sde",
 ];
 
-const models = ["stable diffusion"];
-
 const PostProcessorOptions: Option[] = [
   { value: "animesharp", label: "4xAnimeSharp" },
   { value: "ersgran_x4plus", label: "RealESRGAN_x4plus" },
@@ -101,6 +101,9 @@ const ImageGenForm = () => {
   const [height, setHeight] = useState([512]);
   const [guidance, setGuidance] = useState([7]);
   const [clipskip, setClipSkip] = useState([1]);
+
+  const [models, setModels] = useState([]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -120,6 +123,27 @@ const ImageGenForm = () => {
       tiling: false,
     },
   });
+
+  // const fetchModels = ModelStore.getState().fetchModels;
+
+  // useEffect(() => {
+  //   fetchModels();
+  // }, []);
+
+  // const models: Model[] = ModelStore.getState().models;
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const fetchData = async () => {
+        const data = await fetchAvailableModels();
+        setModels(data);
+      };
+
+      fetchData();
+    }, 180000);
+
+    // Cleanup function: Clear the interval when the component unmounts
+    return () => clearInterval(intervalId);
+  }, []);
 
   // useEffect(() => {
   //   if (user) {
@@ -406,14 +430,21 @@ const ImageGenForm = () => {
                           defaultValue={field.value}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a sampler" />
+                            <SelectValue placeholder="Select a Model" />
                           </SelectTrigger>
                           <SelectContent className="max-h-[200px]">
                             <SelectGroup>
-                              <SelectLabel>Sampler Lite</SelectLabel>
-                              {models.map((list, idx) => (
-                                <SelectItem value={list} key={idx}>
-                                  {list}
+                              <SelectLabel>Available Models</SelectLabel>
+
+                              {/* {models.map((model, idx) => (
+                                <SelectItem value={model.name} key={idx}>
+                                  {model.name}
+                                </SelectItem>
+                              ))} */}
+
+                              {models.map((model: Model, idx) => (
+                                <SelectItem value={model?.name} key={idx}>
+                                  {model?.name}
                                 </SelectItem>
                               ))}
                             </SelectGroup>
