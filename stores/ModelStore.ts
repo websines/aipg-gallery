@@ -1,5 +1,6 @@
 import fetchAvailableModels  from '@/app/_api/fetchModels'
 import {create} from 'zustand'
+import { Model } from '@/types'
 
 interface ModelStoreState{
     models: Model[] | [], 
