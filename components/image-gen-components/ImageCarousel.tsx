@@ -119,7 +119,7 @@ const ImageCarousel = () => {
                             {generatedImg && (
                               <img
                                 src={`data:image/jpg;base64,${generatedImg.base64String}`}
-                                className="h-[512px] w-[512px] object-contain"
+                                className="h-auto w-auto max-h-[1024px] max-w-[1024px] object-contain"
                                 alt="img"
                               />
                             )}
