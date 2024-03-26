@@ -37,6 +37,7 @@ import { base64toBlob } from "@/utils/imageUtils";
 const ImageCarousel = () => {
   const jobID = useJobIdStore((state: any) => state.jobId);
 
+  const [finalImages, setImages] = useState<any>();
   const [shouldRefetch, setShouldRefetch] = useState(true);
   const {
     data: performance,
@@ -69,10 +70,11 @@ const ImageCarousel = () => {
   }, [imgStatus, shouldRefetch]);
   useEffect(() => {
     if (finsihedImage?.success) {
-      console.log(finsihedImage);
+      setImages(finsihedImage);
       useJobIdStore.getState().clearJobId();
     }
   }, [finsihedImage]);
+
   return (
     <>
       <Card>
@@ -110,33 +112,33 @@ const ImageCarousel = () => {
         <CardContent className="">
           <Carousel className="w-full max-w-xs mx-auto">
             <CarouselContent>
-              {finsihedImage?.success &&
-                "generations" in finsihedImage &&
-                finsihedImage?.generations.map((generatedImg, index: any) => (
-                  <CarouselItem key={index}>
-                    <div className="p-1">
-                      <Card>
-                        <CardContent className="flex aspect-square items-center justify-center p-6 bg-white">
-                          {generatedImg && "base64String" in generatedImg && (
-                            <div>
-                              <p className="text-white">
-                                {generatedImg.base64String}
-                              </p>
+              {finalImages?.success! &&
+                finalImages?.generations.map(
+                  (generatedImg: any, index: any) => (
+                    <CarouselItem key={index}>
+                      <div className="p-1">
+                        <Card>
+                          <CardContent className="flex aspect-square items-center justify-center p-6 bg-white">
+                            {generatedImg && (
                               <img
                                 src={`data:image/jpg;base64,${generatedImg.base64String}`}
-                                className="max-h-[512px] max-w-[512px] object-contain"
+                                className="h-[512px] w-[512px] object-contain"
                                 alt="img"
                               />
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CarouselItem>
-                ))}
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </CarouselItem>
+                  )
+                )}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            {finalImages?.success && (
+              <div>
+                <CarouselPrevious />
+                <CarouselNext />
+              </div>
+            )}
           </Carousel>
         </CardContent>
 
@@ -154,8 +156,10 @@ const ImageCarousel = () => {
             <div>Wait Time: {imgStatus?.wait_time}</div>
           </CardFooter>
         )}
-        {finsihedImage?.success && (
-          <div className="text-white">Your images are generated</div>
+        {finalImages?.success && (
+          <div className="text-white p-4 text-center font-medium m-2">
+            Your images are generated
+          </div>
         )}
       </Card>
     </>
