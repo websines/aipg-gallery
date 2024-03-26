@@ -160,7 +160,7 @@ const ImageGenForm = () => {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit)}
-              className="my-2 md:my-8 p-4 flex flex-col gap-2"
+              className="my-2 md:my-8 p-4 flex flex-col gap-4"
             >
               <FormField
                 control={form.control}
@@ -447,7 +447,7 @@ const ImageGenForm = () => {
                   return (
                     <FormItem>
                       <FormLabel className="flex flex-row items-center gap-2">
-                        Post-Processors
+                        Post-Processors - DO NOT USE THIS FOR NOW
                         <ToolTipComponent tooltipText="Image Generating Model" />
                       </FormLabel>
                       <FormControl>
