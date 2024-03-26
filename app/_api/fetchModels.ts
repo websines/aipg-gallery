@@ -15,11 +15,10 @@ export default async function fetchAvailableModels(){
         const response = await res.json()
 
         return response
-
        
 
     }catch(err){
-            console.log(`Error: Unable to fetch available models from AI Horde`)
+            console.log(`Error: Unable to fetch available models from AIPG Horde`)
             console.log(err)
             return []
     }

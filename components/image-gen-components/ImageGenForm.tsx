@@ -39,10 +39,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { User } from "@supabase/supabase-js";
-import { ModelStore } from "@/stores/ModelStore";
+
 import fetchAvailableModels from "@/app/_api/fetchModels";
 import { Model } from "@/types";
+import { useQuery } from "@tanstack/react-query";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -95,15 +95,7 @@ const PostProcessorOptions: Option[] = [
 ];
 
 const ImageGenForm = () => {
-  const [generateDisabled, setGenerateDisable] = useState(true);
-  const [batchSize, setBatchSize] = useState([1]);
-  const [steps, setSteps] = useState([15]);
-  const [width, setWidth] = useState([512]);
-  const [height, setHeight] = useState([512]);
-  const [guidance, setGuidance] = useState([7]);
-  const [clipskip, setClipSkip] = useState([1]);
-
-  const [models, setModels] = useState([]);
+  const [generateDisabled, setGenerateDisable] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -125,30 +117,15 @@ const ImageGenForm = () => {
     },
   });
 
-  // const fetchModels = ModelStore.getState().fetchModels;
-
-  // useEffect(() => {
-  //   fetchModels();
-  // }, []);
-
-  // const models: Model[] = ModelStore.getState().models;
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await fetchAvailableModels();
-      setModels(data);
-    };
-
-    // Call fetchData initially for the first load
-    fetchData();
-
-    // Set up the interval for subsequent calls
-    const intervalId = setInterval(() => {
-      fetchData();
-    }, 180000);
-
-    // Cleanup function: Clear the interval
-    return () => clearInterval(intervalId);
-  }, []);
+  const {
+    data: models,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["models"],
+    queryFn: () => fetchAvailableModels(),
+    refetchInterval: 60000,
+  });
 
   // useEffect(() => {
   //   if (user) {
@@ -299,7 +276,6 @@ const ImageGenForm = () => {
                           min={1}
                           max={50}
                           onValueChange={(value: any) => {
-                            setSteps([value]);
                             field.onChange([value]);
                           }}
                           step={1}
@@ -325,10 +301,8 @@ const ImageGenForm = () => {
                           min={64}
                           max={1024}
                           onValueChange={(value: any) => {
-                            setWidth([value]);
                             field.onChange([value]);
                           }}
-                          value={batchSize}
                           step={64}
                         />
                       </FormControl>
@@ -352,10 +326,8 @@ const ImageGenForm = () => {
                           min={64}
                           max={1024}
                           onValueChange={(value: any) => {
-                            setHeight([value]);
                             field.onChange([value]);
                           }}
-                          value={batchSize}
                           step={64}
                         />
                       </FormControl>
@@ -379,10 +351,8 @@ const ImageGenForm = () => {
                           min={1}
                           max={24}
                           onValueChange={(value: any) => {
-                            setGuidance([value]);
                             field.onChange([value]);
                           }}
-                          value={batchSize}
                           step={0.5}
                         />
                       </FormControl>
@@ -406,10 +376,8 @@ const ImageGenForm = () => {
                           min={1}
                           max={10}
                           onValueChange={(value: any) => {
-                            setClipSkip([value]);
                             field.onChange([value]);
                           }}
-                          value={batchSize}
                           step={1}
                         />
                       </FormControl>
@@ -440,14 +408,21 @@ const ImageGenForm = () => {
                           <SelectContent className="max-h-[200px]">
                             <SelectGroup>
                               <SelectLabel>Available Models</SelectLabel>
+                              {isLoading && (
+                                <div className="p-2 text-sm">Loading...</div>
+                              )}
+                              {error && (
+                                <div className="p-2 text-sm">
+                                  Error: {error.message}
+                                </div>
+                              )}
+                              {models?.length < 1 && (
+                                <div className="p-2 text-sm">
+                                  No models found
+                                </div>
+                              )}
 
-                              {/* {models.map((model, idx) => (
-                                <SelectItem value={model.name} key={idx}>
-                                  {model.name}
-                                </SelectItem>
-                              ))} */}
-
-                              {models.map((model: Model, idx) => (
+                              {models?.map((model: Model, idx: any) => (
                                 <SelectItem value={model?.name} key={idx}>
                                   {model?.name}
                                 </SelectItem>

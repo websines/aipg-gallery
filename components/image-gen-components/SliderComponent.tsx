@@ -16,7 +16,7 @@ function SliderWithCounter({ min, max, step = 1, onChange, value }: any) {
   const handleChange = (newValue: any) => {
     console.log("SliderWithCounter - newValue:", newValue);
     setSliderValue(newValue);
-    onChange([newValue]);
+    onChange(newValue);
   };
 
   const handleIncrement = () => {
@@ -48,7 +48,11 @@ function SliderWithCounter({ min, max, step = 1, onChange, value }: any) {
         <Button onClick={handleIncrement} variant={"outline"} type="button">
           +
         </Button>
-        <Input value={sliderValue} className="md:w-[60px]" />
+        <Input
+          value={sliderValue}
+          className="md:w-[60px]"
+          onChange={(e) => setSliderValue(e.target.value)}
+        />
         <Button onClick={handleDecrement} variant={"outline"} type="button">
           -
         </Button>
