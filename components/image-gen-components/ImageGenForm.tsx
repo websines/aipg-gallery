@@ -108,7 +108,7 @@ const ImageGenForm = () => {
       postivePrompt: "",
       negativePrompt: "",
       sampler: "",
-      batchSize: 1,
+      batchSize: 4,
       steps: 15,
       width: 512,
       height: 512,
