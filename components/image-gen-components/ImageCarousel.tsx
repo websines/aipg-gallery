@@ -118,11 +118,16 @@ const ImageCarousel = () => {
                       <Card>
                         <CardContent className="flex aspect-square items-center justify-center p-6 bg-white">
                           {generatedImg && "base64String" in generatedImg && (
-                            <img
-                              src={`data:image/jpg;base64,${generatedImg.base64String}`}
-                              className="max-h-[512px] max-w-[512px] object-contain"
-                              alt="img"
-                            />
+                            <div>
+                              <p className="text-white">
+                                {generatedImg.base64String}
+                              </p>
+                              <img
+                                src={`data:image/jpg;base64,${generatedImg.base64String}`}
+                                className="max-h-[512px] max-w-[512px] object-contain"
+                                alt="img"
+                              />
+                            </div>
                           )}
                         </CardContent>
                       </Card>
