@@ -61,7 +61,7 @@ export const getFinishedImage = async (
   
     try {
       const res = await fetch(
-        `${BASE_API_URL}/api/v2/generate/status/${jobId}`,
+        `${BASE_API_URL}/generate/status/${jobId}`,
         {
           method: 'GET',
           headers: {

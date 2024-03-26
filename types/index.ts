@@ -89,7 +89,19 @@ export interface Model {
   export interface CheckImageResponse extends CheckImageAsyncResponse {
     success: boolean
   }
-  
+  export interface CheckResponse {
+    success: boolean
+    message?: string
+    status?: string
+    finished?: number
+    processing?: number
+    waiting?: number
+    done?: boolean
+    faulted?: boolean
+    wait_time?: number
+    queue_position?: number
+    jobId: string
+  }
   export interface CreateImageAsyncResponse {
     id: string
     kudos: number

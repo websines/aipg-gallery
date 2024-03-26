@@ -45,6 +45,8 @@ import { Model } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { transformFormData } from "@/utils/validationUtils";
 import useFormInputStore from "@/stores/InputStore";
+import { createImage } from "@/app/_api/createImage";
+import useJobIdStore from "@/stores/jobIDStore";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -98,6 +100,7 @@ const PostProcessorOptions: Option[] = [
 
 const ImageGenForm = () => {
   const [generateDisabled, setGenerateDisable] = useState(false);
+  const [jobID, setJob] = useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -135,21 +138,16 @@ const ImageGenForm = () => {
   //   }
   // }, [user]);
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     const transformedData = transformFormData(data);
 
-    // const updateFormField = useFormInputStore(
-    //   (state: any) => state.updateFormField
-    // );
-    // updateFormField("formData", transformedData); // Update Zustand
+    const response = await createImage(transformedData);
 
-    // // Log the updated Zustand state for inspection
-    // useFormInputStore.subscribe((state) =>
-    //   console.log("Updated Zustand State:", state)
-    // );
-
-    console.log(transformedData);
+    setJob(response.jobId!);
   };
+
+  const setJobId = useJobIdStore((state: any) => state.setJobId);
+  setJobId(jobID);
 
   return (
     <>

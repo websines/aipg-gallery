@@ -6,7 +6,7 @@ import { CreateImageResponse, IApiParams, GenerateResponse } from "@/types"
 let isPending = false
 
 export const createImage = async (
-  imageDetails: IApiParams
+  imageDetails: any
 ): Promise<CreateImageResponse> => {
   const apikey = defaultApiKey
 
@@ -30,7 +30,7 @@ export const createImage = async (
   const imageParams = imageDetails
 
   try {
-    const resp = await fetch(`${BASE_API_URL}/api/v2/generate/async`, {
+    const resp = await fetch(`${BASE_API_URL}/generate/async`, {
       method: 'POST',
       body: JSON.stringify(imageParams),
       headers: {

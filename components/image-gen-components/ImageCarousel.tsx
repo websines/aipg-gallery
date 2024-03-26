@@ -27,8 +27,17 @@ import {
   DialogContent,
 } from "../ui/dialog";
 import { Button } from "../ui/button";
+import useJobIdStore from "@/stores/jobIDStore";
+import { checkImageStatus } from "@/app/_api/checkImageStatus";
+import { useEffect, useState } from "react";
+import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
+import { FinishedImageResponse, GeneratedImage } from "@/types";
+import { base64toBlob } from "@/utils/imageUtils";
 
 const ImageCarousel = () => {
+  const jobID = useJobIdStore((state: any) => state.jobId);
+
+  const [shouldRefetch, setShouldRefetch] = useState(true);
   const {
     data: performance,
     isLoading,
@@ -39,6 +48,31 @@ const ImageCarousel = () => {
     refetchOnMount: "always",
     refetchInterval: 60000,
   });
+
+  const { data: imgStatus } = useQuery({
+    queryKey: ["checkImgStatus", jobID],
+    queryFn: () => checkImageStatus(jobID),
+    refetchInterval: shouldRefetch ? 1000 : false,
+    enabled: jobID !== "",
+  });
+
+  const { data: finsihedImage } = useQuery({
+    queryKey: ["finishedImage", jobID], // Ensure a unique query key
+    queryFn: () => getFinishedImage(jobID),
+    enabled: imgStatus?.done,
+  });
+
+  useEffect(() => {
+    if (imgStatus?.done && shouldRefetch) {
+      setShouldRefetch(false); // Set shouldRefetch to false to avoid triggering again
+    }
+  }, [imgStatus, shouldRefetch]);
+  useEffect(() => {
+    if (finsihedImage?.success) {
+      console.log(finsihedImage);
+      useJobIdStore.getState().clearJobId();
+    }
+  }, [finsihedImage]);
   return (
     <>
       <Card>
@@ -76,34 +110,48 @@ const ImageCarousel = () => {
         <CardContent className="">
           <Carousel className="w-full max-w-xs mx-auto">
             <CarouselContent>
-              {Array.from({ length: 5 }).map((_, index) => (
-                <CarouselItem key={index}>
-                  <div className="p-1">
-                    <Card>
-                      <CardContent className="flex aspect-square items-center justify-center p-6 bg-white">
-                        <span className="text-4xl font-semibold text-black">
-                          {index + 1}
-                        </span>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </CarouselItem>
-              ))}
+              {finsihedImage?.success &&
+                "generations" in finsihedImage &&
+                finsihedImage?.generations.map((generatedImg, index: any) => (
+                  <CarouselItem key={index}>
+                    <div className="p-1">
+                      <Card>
+                        <CardContent className="flex aspect-square items-center justify-center p-6 bg-white">
+                          {generatedImg && "base64String" in generatedImg && (
+                            <img
+                              src={`data:image/jpg;base64,${generatedImg.base64String}`}
+                              className="max-h-[512px] max-w-[512px] object-contain"
+                              alt="img"
+                            />
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                ))}
             </CarouselContent>
             <CarouselPrevious />
             <CarouselNext />
           </Carousel>
         </CardContent>
-        <CardFooter className="flex flex-col my-4 gap-2">
-          <div className="flex flex-row items-center justify-center gap-2">
-            <p className="text-md font-semibold text-white">
-              Generating Your Images
-            </p>{" "}
-            <span>
-              <Loading />
-            </span>
-          </div>
-        </CardFooter>
+
+        {jobID && (
+          <CardFooter className="flex flex-col my-4 gap-2">
+            <div className="flex flex-row items-center justify-center gap-2">
+              <p className="text-md font-semibold text-white">
+                Generating Your Images
+              </p>{" "}
+              <span>
+                <Loading />
+              </span>
+            </div>
+            <div className="">Job ID: {jobID as string}</div>
+            <div>Wait Time: {imgStatus?.wait_time}</div>
+          </CardFooter>
+        )}
+        {finsihedImage?.success && (
+          <div className="text-white">Your images are generated</div>
+        )}
       </Card>
     </>
   );

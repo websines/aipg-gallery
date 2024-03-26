@@ -1,18 +1,7 @@
 import { BASE_API_URL, ClientHeader } from "@/constants"
+import { CheckResponse } from "@/types"
 
-interface CheckResponse {
-  success: boolean
-  message?: string
-  status?: string
-  finished?: number
-  processing?: number
-  waiting?: number
-  done?: boolean
-  faulted?: boolean
-  wait_time?: number
-  queue_position?: number
-  jobId: string
-}
+
 
 interface HackyJobCheck {
   [key: string]: boolean
@@ -35,7 +24,7 @@ export const checkImageStatus = async (
     }
 
     const res = await fetch(
-      `${BASE_API_URL}/api/v2/generate/check/${jobId}`,
+      `${BASE_API_URL}/generate/check/${jobId}`,
       {
         headers: {
           'Content-Type': 'application/json',
