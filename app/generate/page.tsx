@@ -5,12 +5,7 @@ import AlertDialogComponent from "@/components/misc-components/AlertDialogCompon
 import createSupabaseServerClient from "@/lib/supabase/server";
 
 const page = async () => {
-  // const supabase = await createSupabaseServerClient();
-
-  // const {
-  //   data: { user },
-  // } = await supabase.auth.getUser();
-  const user = false;
+  const user = true;
 
   return (
     <div className="w-full flex flex-col gap-4 items-center justify-center p-4">

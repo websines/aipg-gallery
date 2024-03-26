@@ -26,13 +26,10 @@ import {
   DialogTrigger,
   DialogContent,
 } from "../ui/dialog";
-import { Button } from "../ui/button";
 import useJobIdStore from "@/stores/jobIDStore";
 import { checkImageStatus } from "@/app/_api/checkImageStatus";
 import { useEffect, useState } from "react";
 import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
-import { FinishedImageResponse, GeneratedImage } from "@/types";
-import { base64toBlob } from "@/utils/imageUtils";
 
 const ImageCarousel = () => {
   const jobID = useJobIdStore((state: any) => state.jobId);
@@ -80,20 +77,20 @@ const ImageCarousel = () => {
       <Card>
         <CardHeader className="mx-auto flex text-center">
           <CardTitle>AIPG IMAGE GENERATOR</CardTitle>
-          <CardDescription className="flex flex-row justify-between p-2 m-2 items-center">
+          <div className="flex flex-row justify-between p-2 m-2 items-center">
             <div className=" flex flex-row items-center gap-1">
               <div
                 className={`w-2 h-2 ${
                   performance?.worker_count > 0 ? "bg-green-500" : "bg-red-500"
                 } rounded-full`}
               />
-              <p>{performance?.worker_count} Workers Online</p>
+              <div>{performance?.worker_count} Workers Online</div>
             </div>
             <Dialog>
-              <DialogTrigger>
-                <Button variant={"ghost"} type="button">
+              <DialogTrigger type="button">
+                <div className="px-4 py-2 rounded-sm hover:bg-gray-800">
                   Horde Stats
-                </Button>
+                </div>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -107,7 +104,7 @@ const ImageCarousel = () => {
                 </div>
               </DialogContent>
             </Dialog>
-          </CardDescription>
+          </div>
         </CardHeader>
         <CardContent className="">
           <Carousel className="w-full max-w-xs mx-auto">
