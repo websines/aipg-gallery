@@ -114,7 +114,7 @@ export interface Model {
   }
 
 
-  interface ParamsObject {
+  export interface ParamsObject {
     sampler_name?: string // Optional due to ControlNet
     cfg_scale: number
     height: number
@@ -129,7 +129,7 @@ export interface Model {
     karras: boolean
     hires_fix: boolean
     clip_skip: number
-    tiling: boolean
+    tiling?: boolean
     post_processing: string[]
     n: number
   }

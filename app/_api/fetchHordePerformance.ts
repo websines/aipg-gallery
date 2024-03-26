@@ -1,11 +1,11 @@
 import { BASE_API_URL, ClientHeader } from "@/constants"
 
 
-export const fetchAvailableWorkers = async () => {
+export const fetchHordePerformace = async () => {
 
 
     try {
-        const res = await fetch(`${BASE_API_URL}/workers`, {
+        const res = await fetch(`${BASE_API_URL}/status/performance`, {
           cache: 'no-store',
           headers: {
             'Content-Type': 'application/json',

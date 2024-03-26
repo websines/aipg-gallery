@@ -43,6 +43,8 @@ import {
 import fetchAvailableModels from "@/app/_api/fetchModels";
 import { Model } from "@/types";
 import { useQuery } from "@tanstack/react-query";
+import { transformFormData } from "@/utils/validationUtils";
+import useFormInputStore from "@/stores/InputStore";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -56,12 +58,12 @@ const formSchema = z.object({
   }),
   negativePrompt: z.string(),
   sampler: z.string(),
-  batchSize: z.array(z.number()),
-  steps: z.array(z.number()),
-  width: z.array(z.number()),
-  height: z.array(z.number()),
-  guidance: z.array(z.number()),
-  clipskip: z.array(z.number()),
+  batchSize: z.number(),
+  steps: z.number(),
+  width: z.number(),
+  height: z.number(),
+  guidance: z.number(),
+  clipskip: z.number(),
   model: z.string(),
   postprocessors: z.array(optionSchema).optional(),
   karras: z.boolean().optional(),
@@ -103,12 +105,12 @@ const ImageGenForm = () => {
       postivePrompt: "",
       negativePrompt: "",
       sampler: "",
-      batchSize: [],
-      steps: [],
-      width: [],
-      height: [],
-      guidance: [],
-      clipskip: [],
+      batchSize: 1,
+      steps: 15,
+      width: 512,
+      height: 512,
+      guidance: 7,
+      clipskip: 1,
       model: "",
       karras: false,
       nsfw: false,
@@ -134,15 +136,19 @@ const ImageGenForm = () => {
   // }, [user]);
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log(JSON.stringify(data));
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+    const transformedData = transformFormData(data);
+
+    // const updateFormField = useFormInputStore(
+    //   (state: any) => state.updateFormField
+    // );
+    // updateFormField("formData", transformedData); // Update Zustand
+
+    // // Log the updated Zustand state for inspection
+    // useFormInputStore.subscribe((state) =>
+    //   console.log("Updated Zustand State:", state)
+    // );
+
+    console.log(transformedData);
   };
 
   return (

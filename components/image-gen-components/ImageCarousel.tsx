@@ -1,12 +1,11 @@
 "use client";
-import { useState } from "react";
-
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardFooter,
+  CardDescription,
 } from "@/components/ui/card";
 
 import {
@@ -16,15 +15,63 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Progress } from "../ui/progress";
+
 import Loading from "../misc-components/Loading";
+import { useQuery } from "@tanstack/react-query";
+import { fetchHordePerformace } from "@/app/_api/fetchHordePerformance";
+import {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogContent,
+} from "../ui/dialog";
+import { Button } from "../ui/button";
 
 const ImageCarousel = () => {
+  const {
+    data: performance,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["performance"],
+    queryFn: () => fetchHordePerformace(),
+    refetchOnMount: "always",
+    refetchInterval: 60000,
+  });
   return (
     <>
       <Card>
         <CardHeader className="mx-auto flex text-center">
           <CardTitle>AIPG IMAGE GENERATOR</CardTitle>
+          <CardDescription className="flex flex-row justify-between p-2 m-2 items-center">
+            <div className=" flex flex-row items-center gap-1">
+              <div
+                className={`w-2 h-2 ${
+                  performance?.worker_count > 0 ? "bg-green-500" : "bg-red-500"
+                } rounded-full`}
+              />
+              <p>{performance?.worker_count} Workers Online</p>
+            </div>
+            <Dialog>
+              <DialogTrigger>
+                <Button variant={"ghost"} type="button">
+                  Horde Stats
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>AIPG Horde Stats</DialogTitle>
+                </DialogHeader>
+                <div className="p-4 text-white colums-1 md:columns-2 gap-2">
+                  <p>Queued requests: {performance?.queued_requests}</p>
+                  <p>Queued megapixels: {performance?.queued_megapixels}</p>
+                  <p>Thread_count: {performance?.thread_count}</p>
+                  <p>Queued_tokens: {performance?.queued_tokens}</p>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </CardDescription>
         </CardHeader>
         <CardContent className="">
           <Carousel className="w-full max-w-xs mx-auto">
@@ -56,7 +103,6 @@ const ImageCarousel = () => {
               <Loading />
             </span>
           </div>
-          <Progress value={33} className="w-[40%]" />
         </CardFooter>
       </Card>
     </>
