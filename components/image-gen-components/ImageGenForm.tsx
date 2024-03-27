@@ -48,6 +48,7 @@ import useFormInputStore from "@/stores/InputStore";
 import { createImage } from "@/app/_api/createImage";
 import useJobIdStore from "@/stores/jobIDStore";
 import { User } from "@supabase/supabase-js";
+import useImageMetadataStore from "@/stores/ImageMetadataStore";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -73,6 +74,7 @@ const formSchema = z.object({
   hires_fix: z.boolean().optional(),
   tiling: z.boolean().optional(),
   nsfw: z.boolean().optional(),
+  publicView: z.boolean(),
 });
 
 const samplerListLite = [
@@ -98,10 +100,26 @@ const PostProcessorOptions: Option[] = [
   { value: "ersgran_x4plus_anime_6b", label: "RealESRGAN_x4plus_anime_6b" },
   { value: "strip_background", label: "Strip Background" },
 ];
+type MetaData = {
+  positivePrompt: string;
+  negativePrompt: string;
+  sampler: string;
+  model: string;
+  guidance: number;
+  publicView: boolean;
+};
 
 const ImageGenForm = ({ user }: { user: User | null }) => {
   const [generateDisabled, setGenerateDisable] = useState(true);
   const [jobID, setJob] = useState("");
+  const [metadata, setMetadata] = useState<MetaData>({
+    positivePrompt: "",
+    negativePrompt: "",
+    sampler: "",
+    model: "",
+    guidance: 1,
+    publicView: false,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -120,6 +138,7 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
       nsfw: false,
       hires_fix: false,
       tiling: false,
+      publicView: false,
     },
   });
 
@@ -139,13 +158,28 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
     }
   }, [user]);
 
+  const updateMetadata = useImageMetadataStore(
+    (state) => state.initializeMetadata
+  );
+
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
+    setMetadata({
+      positivePrompt: data.postivePrompt,
+      negativePrompt: data.negativePrompt,
+      sampler: data.sampler,
+      model: data.model,
+      guidance: data.guidance,
+      publicView: data.publicView,
+    });
+
     const transformedData = transformFormData(data);
 
     const response = await createImage(transformedData);
 
     setJob(response.jobId!);
   };
+
+  updateMetadata(metadata);
 
   const setJobId = useJobIdStore((state: any) => state.setJobId);
   setJobId(jobID);
@@ -545,6 +579,27 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
                         <FormLabel className="flex flex-row items-center gap-1 mt-2">
                           Tiling
                           <ToolTipComponent tooltipText="tiling" />
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="publicView"
+                  render={({ field }) => {
+                    return (
+                      <FormItem className="flex flex-row items-center justify-start gap-2">
+                        <FormLabel className="flex flex-row items-center gap-1 mt-2">
+                          Public Image
+                          <ToolTipComponent tooltipText="Make it visible to others" />
                         </FormLabel>
                         <FormControl>
                           <Switch

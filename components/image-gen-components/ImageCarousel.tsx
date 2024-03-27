@@ -31,12 +31,22 @@ import { checkImageStatus } from "@/app/_api/checkImageStatus";
 import { useEffect, useState } from "react";
 import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
 import { User } from "@supabase/supabase-js";
-import { InfoIcon } from "lucide-react";
+
+import useImageMetadataStore from "@/stores/ImageMetadataStore";
+import { metadata } from "@/app/layout";
+import {
+  saveImageData,
+  saveMetadata,
+  uploadImage,
+} from "@/app/_api/saveImageToSupabase";
+import { base64toBlob } from "@/utils/helperUtils";
 
 const ImageCarousel = ({ user }: { user: User | null }) => {
   const jobID = useJobIdStore((state: any) => state.jobId);
+  const metadata = useImageMetadataStore((state) => state.metadata);
+  const addImg = useImageMetadataStore((state) => state.addImage);
 
-  const [finalImages, setImages] = useState<any>();
+  const [finalImages, setImages] = useState<any>(null);
   const [shouldRefetch, setShouldRefetch] = useState(true);
   const {
     data: performance,
@@ -73,6 +83,48 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
       useJobIdStore.getState().clearJobId();
     }
   }, [finsihedImage]);
+
+  useEffect(() => {
+    if (finalImages != null) {
+      console.log("adding images...");
+      finalImages.generations.map((item: any) => {
+        addImg({
+          base64String: item.base64String,
+          seed: item.seed,
+        });
+      });
+    }
+  }, [finalImages, addImg]);
+
+  useEffect(() => {
+    async function imgWorker(userId: any) {
+      try {
+        const metadataId = await saveMetadata(metadata, userId);
+
+        const uploadedImageUrls = [];
+        if (finalImages != null) {
+          for (const image of finalImages.generations) {
+            const file = base64toBlob(image.base64String);
+            const imageUrl = await uploadImage(file, metadataId);
+
+            if (imageUrl) {
+              uploadedImageUrls.push(imageUrl);
+              await saveImageData(image, metadataId);
+            } else {
+              console.log(error?.message);
+            }
+          }
+        }
+
+        // Success! Do something with uploadedImageUrls if needed
+      } catch (error) {
+        console.error("Error during save:", error);
+        // Display error to the user
+      }
+    }
+
+    imgWorker(user?.id);
+  }, [finalImages, addImg]);
 
   return (
     <>

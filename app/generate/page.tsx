@@ -2,6 +2,8 @@ import ImageCarousel from "@/components/image-gen-components/ImageCarousel";
 import ImageGenForm from "@/components/image-gen-components/ImageGenForm";
 import AlertDialogComponent from "@/components/misc-components/AlertDialogComponent";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { saveMetadata } from "../_api/saveImageToSupabase";
+import useImageMetadataStore from "@/stores/ImageMetadataStore";
 
 const page = async () => {
   const supabase = await createSupabaseServerClient();
@@ -9,6 +11,8 @@ const page = async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // const metadataID = await saveMetadata(metadata, user?.id)
 
   return (
     <div className="w-full flex flex-col gap-4 items-center justify-center p-4">
