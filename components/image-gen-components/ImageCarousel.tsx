@@ -31,6 +31,7 @@ import { checkImageStatus } from "@/app/_api/checkImageStatus";
 import { useEffect, useState } from "react";
 import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
 import { User } from "@supabase/supabase-js";
+import { InfoIcon } from "lucide-react";
 
 const ImageCarousel = ({ user }: { user: User | null }) => {
   const jobID = useJobIdStore((state: any) => state.jobId);
@@ -85,13 +86,17 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
                   performance?.worker_count > 0 ? "bg-green-500" : "bg-red-500"
                 } rounded-full`}
               />
-              <div>{performance?.worker_count} Workers Online</div>
+              <div className="text-md font-medium">
+                {performance?.worker_count} Workers{" "}
+                {performance?.worker_count > 0 ? "online" : "offline"}
+              </div>
             </div>
             <Dialog>
-              <DialogTrigger type="button">
-                <div className="px-4 py-2 rounded-sm hover:bg-gray-800">
-                  Horde Stats
-                </div>
+              <DialogTrigger
+                className="hover:bg-gray-800 cursor-pointer"
+                type="button"
+              >
+                Stats
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -120,7 +125,7 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
                             {generatedImg && (
                               <img
                                 src={`data:image/jpg;base64,${generatedImg.base64String}`}
-                                className="h-auto w-auto max-h-[1024px] max-w-[1024px] object-contain"
+                                className="h-[512px] w-[512px] object-contain"
                                 alt="img"
                               />
                             )}
