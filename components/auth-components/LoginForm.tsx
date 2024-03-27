@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { signInWithEmailAndPassword } from "@/actions/auth-actions";
-import { toast } from "sonner";
+import { useToast } from "../ui/use-toast";
 import { useState, useTransition } from "react";
 import { LoadingSpinner } from "../misc-components/LoadingSpinner";
 import { redirect } from "next/navigation";
@@ -29,7 +29,7 @@ const FormSchema = z.object({
 
 export default function SignInForm() {
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState("");
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -45,9 +45,13 @@ export default function SignInForm() {
       const { error } = JSON.parse(response);
 
       if (error?.message) {
-        setMessage(error.message);
+        toast({
+          description: error.message,
+        });
       } else {
-        setMessage("Successfully LoggedIn!");
+        toast({
+          description: "Successfully logged in!",
+        });
         redirect("/");
       }
     });
@@ -93,7 +97,7 @@ export default function SignInForm() {
             </FormItem>
           )}
         />
-        {message && <p className="text-red text-md font-medium">{message}</p>}
+
         <Button type="submit" className="w-full flex gap-2  flex-row">
           Log In {isPending && <LoadingSpinner className="text-black" />}
         </Button>

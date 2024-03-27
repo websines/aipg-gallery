@@ -18,6 +18,7 @@ import { signUpWithEmailAndPassword } from "@/actions/auth-actions";
 import { useState, useTransition } from "react";
 import { LoadingSpinner } from "../misc-components/LoadingSpinner";
 import { redirect } from "next/navigation";
+import { useToast } from "../ui/use-toast";
 
 const FormSchema = z
   .object({
@@ -35,7 +36,7 @@ const FormSchema = z
   });
 export default function RegisterForm() {
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState("");
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -53,9 +54,13 @@ export default function RegisterForm() {
       const { error } = JSON.parse(response!);
 
       if (error?.message) {
-        setMessage(error.message);
+        toast({
+          description: error?.message,
+        });
       } else {
-        setMessage("Successfully Registered!");
+        toast({
+          description: "Successfully registered",
+        });
         redirect("/");
       }
     });
@@ -120,7 +125,7 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
-        {message && <p className="text-red text-md font-medium">{message}</p>}
+
         <Button type="submit" className="w-full flex gap-2 flex-row">
           Register {isPending && <LoadingSpinner className="text-black" />}
         </Button>
