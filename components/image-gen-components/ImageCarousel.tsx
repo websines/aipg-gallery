@@ -30,8 +30,9 @@ import useJobIdStore from "@/stores/jobIDStore";
 import { checkImageStatus } from "@/app/_api/checkImageStatus";
 import { useEffect, useState } from "react";
 import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
+import { User } from "@supabase/supabase-js";
 
-const ImageCarousel = () => {
+const ImageCarousel = ({ user }: { user: User | null }) => {
   const jobID = useJobIdStore((state: any) => state.jobId);
 
   const [finalImages, setImages] = useState<any>();

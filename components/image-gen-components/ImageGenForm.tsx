@@ -47,6 +47,7 @@ import { transformFormData } from "@/utils/validationUtils";
 import useFormInputStore from "@/stores/InputStore";
 import { createImage } from "@/app/_api/createImage";
 import useJobIdStore from "@/stores/jobIDStore";
+import { User } from "@supabase/supabase-js";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -98,8 +99,8 @@ const PostProcessorOptions: Option[] = [
   { value: "strip_background", label: "Strip Background" },
 ];
 
-const ImageGenForm = () => {
-  const [generateDisabled, setGenerateDisable] = useState(false);
+const ImageGenForm = ({ user }: { user: User | null }) => {
+  const [generateDisabled, setGenerateDisable] = useState(true);
   const [jobID, setJob] = useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -132,11 +133,11 @@ const ImageGenForm = () => {
     refetchInterval: 60000,
   });
 
-  // useEffect(() => {
-  //   if (user) {
-  //     setGenerateDisable(!generateDisabled);
-  //   }
-  // }, [user]);
+  useEffect(() => {
+    if (user) {
+      setGenerateDisable(!generateDisabled);
+    }
+  }, [user]);
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     const transformedData = transformFormData(data);
@@ -562,7 +563,9 @@ const ImageGenForm = () => {
                 className="my-8 "
                 disabled={generateDisabled}
               >
-                Generate images(s)
+                {generateDisabled
+                  ? "Log In To Access Generator"
+                  : "Generate image(s)"}
               </Button>
             </form>
           </Form>

@@ -15,11 +15,9 @@ import { LogIn, LogOut, User, User2Icon } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { AuthForm } from "../auth-components/AuthForm";
 import { SignOutUser } from "@/actions/auth-actions";
+import { type User as UserType } from "@supabase/supabase-js";
 
-import { supabase } from "@/lib/supabase";
-
-export async function UserNav() {
-  const session = false;
+export async function UserNav({ user }: { user: UserType | null }) {
   return (
     <Dialog>
       <DropdownMenu>
@@ -33,17 +31,13 @@ export async function UserNav() {
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        {session ? (
+        {user ? (
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">
-                  {/* {session?.user?.id} */}
-                  Hi
-                </p>
+                <p className="text-sm font-medium leading-none">{user?.id}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {/* {session?.user?.email} */}
-                  Hi@hi.com
+                  {user?.email}
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -57,8 +51,11 @@ export async function UserNav() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer" onClick={SignOutUser}>
-              Log out
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => SignOutUser()}
+            >
+              Log Out
               <DropdownMenuShortcut>
                 <LogOut className="w-4 h-4" />
               </DropdownMenuShortcut>

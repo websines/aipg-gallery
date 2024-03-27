@@ -49,7 +49,8 @@ export default function RegisterForm() {
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     startTransition(async () => {
       const response = await signUpWithEmailAndPassword(data);
-      const { error } = JSON.parse(response);
+
+      const { error } = JSON.parse(response!);
 
       if (error?.message) {
         setMessage(error.message);

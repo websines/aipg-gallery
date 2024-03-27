@@ -1,20 +1,17 @@
 "use client";
 import {
   NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuIndicator,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuViewport,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import Link from "next/link";
 
 import { UserNav } from "../homepage-components/UserNav";
+import { User } from "@supabase/supabase-js";
 
-const Navbar = () => {
+const Navbar = ({ user }: { user: User | null }) => {
   return (
     <>
       <header className="top-0 p-4 flex flex-row justify-between items-center">
@@ -53,7 +50,7 @@ const Navbar = () => {
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
-        <UserNav />
+        <UserNav user={user} />
       </header>
     </>
   );
