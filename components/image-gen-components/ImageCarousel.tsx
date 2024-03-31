@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-  CardDescription,
 } from "@/components/ui/card";
 
 import {
@@ -33,12 +32,8 @@ import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
 import { User } from "@supabase/supabase-js";
 
 import useImageMetadataStore from "@/stores/ImageMetadataStore";
-import { metadata } from "@/app/layout";
-import {
-  saveImageData,
-  saveMetadata,
-  uploadImage,
-} from "@/app/_api/saveImageToSupabase";
+
+import { saveImageData, saveMetadata } from "@/app/_api/saveImageToSupabase";
 import { base64toBlob } from "@/utils/helperUtils";
 
 const ImageCarousel = ({ user }: { user: User | null }) => {
@@ -99,27 +94,16 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
   useEffect(() => {
     async function imgWorker(userId: any) {
       try {
-        const metadataId = await saveMetadata(metadata, userId);
-
-        const uploadedImageUrls = [];
-        if (finalImages != null) {
-          for (const image of finalImages.generations) {
-            const file = base64toBlob(image.base64String);
-            const imageUrl = await uploadImage(file, metadataId);
-
-            if (imageUrl) {
-              uploadedImageUrls.push(imageUrl);
+        if (metadata?.positivePrompt != "") {
+          const metadataId = await saveMetadata(metadata, userId);
+          if (finalImages != null) {
+            for (const image of finalImages.generations) {
               await saveImageData(image, metadataId);
-            } else {
-              console.log(error?.message);
             }
           }
         }
-
-        // Success! Do something with uploadedImageUrls if needed
       } catch (error) {
         console.error("Error during save:", error);
-        // Display error to the user
       }
     }
 
@@ -139,7 +123,7 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
                 } rounded-full`}
               />
               <div className="text-md font-medium">
-                {performance?.worker_count} Workers{" "}
+                {performance?.worker_count} Worker(s){" "}
                 {performance?.worker_count > 0 ? "online" : "offline"}
               </div>
             </div>
@@ -207,8 +191,8 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
                 <Loading />
               </span>
             </div>
-            <div className="">Job ID: {jobID as string}</div>
-            <div>Wait Time: {imgStatus?.wait_time}</div>
+            <div className="text-sm text-center">Job ID: {jobID as string}</div>
+            <div>Wait Time: {imgStatus?.wait_time} seconds</div>
           </CardFooter>
         )}
         {finalImages?.success && (

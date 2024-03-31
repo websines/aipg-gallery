@@ -22,20 +22,20 @@ export async function saveMetadata(metadata:any, userId:any) {
   return data[0].id
 }
 
-export async function uploadImage(file: any, metadataId: any) {
-  const fileName = `${metadataId}_${Date.now()}.jpg`; 
-  const { data, error } = await supabase.storage
-    .from('generated_images')
-    .upload(fileName, file);
+// export async function uploadImage(file: any, metadataId: any) {
+//   const fileName = `${metadataId}_${Date.now()}.jpg`; 
+//   const { data, error } = await supabase.storage
+//     .from('generated_images')
+//     .upload(fileName, file);
 
-  if (error) {
-    console.error("Error uploading image:", error);
-    return null;
-  } else {
-    const {data} = supabase.storage.from('generated_images').getPublicUrl(fileName);
-    return data?.publicUrl;
-  }
-}
+//   if (error) {
+//     console.error("Error uploading image:", error);
+//     return null;
+//   } else {
+//     const {data} = supabase.storage.from('generated_images').getPublicUrl(fileName);
+//     return data?.publicUrl;
+//   }
+// }
 
 export async function saveImageData(image: any, metadataId: any) {
   const { data, error } = await supabase

@@ -179,7 +179,9 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
     setJob(response.jobId!);
   };
 
-  updateMetadata(metadata);
+  useEffect(() => {
+    updateMetadata(metadata);
+  }, [metadata]);
 
   const setJobId = useJobIdStore((state: any) => state.setJobId);
   setJobId(jobID);
