@@ -21,44 +21,40 @@ import { Heart } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchLikedStatus, likeorUnlikeImages } from "@/app/_api/likeImages";
 
-const GalleryCard = ({ item, user }: any) => {
-  const {
-    isLoading,
-    isError,
-    data: isLiked,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ["imageLikeStatus", item.id, user], // Unique query key
-    queryFn: () => fetchLikedStatus(item.id, user),
+const LikesGallery = ({ item, userID }: any) => {
+  const { data: isLiked, refetch } = useQuery({
+    queryKey: ["imageLikeStatus", item.image_metadata.id, userID], // Unique query key
+    queryFn: () => fetchLikedStatus(item.image_metadata.id, userID),
   });
 
   const { mutate } = useMutation({
-    mutationKey: ["likeMutation", item.id, user],
-    mutationFn: () => likeorUnlikeImages(user, item.id),
+    mutationKey: ["likeMutation", item.id, userID],
+    mutationFn: () => likeorUnlikeImages(userID, item.image_metadata.id),
     onSuccess: async () => await refetch(),
     onError: (error) => console.error(error.message),
   });
 
   const toggleLike = (itemID: any, userID: any) => {
-    if (user) {
+    if (userID) {
       mutate(userID, itemID);
     }
   };
   return (
     <div>
-      <Dialog key={item.id}>
+      <Dialog key={item.image_metadata.id}>
         <DialogTrigger asChild>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">{item.positive_prompt}</CardTitle>
-              <CardDescription>{item.model}</CardDescription>
+              <CardTitle className="text-sm">
+                {item.image_metadata.positive_prompt}
+              </CardTitle>
+              <CardDescription>{item.image_metadata.model}</CardDescription>
             </CardHeader>
             <CardContent>
               <img
-                src={`data:image/jpg;base64,${item.image_data[0].base64_string}`}
+                src={`data:image/jpg;base64,${item.image_metadata.image_data[0].base64_string}`}
                 className="max-w-full object-cover"
-                alt={item.positive_prompt}
+                alt={item.image_metadata.positive_prompt}
               />
             </CardContent>
           </Card>
@@ -66,10 +62,10 @@ const GalleryCard = ({ item, user }: any) => {
         <DialogContent className="mt-4">
           <Card>
             <CardHeader className="flex flex-row gap-2 items-center justify-start">
-              {user ? (
+              {userID ? (
                 <button
-                  onClick={() => toggleLike(item.id, user.id)}
-                  className=""
+                  onClick={() => toggleLike(item.image_metadata.id, userID)}
+                  className="outline-none"
                 >
                   {isLiked ? (
                     <Heart className="w-6 h-6 fill-red-500" />
@@ -84,7 +80,7 @@ const GalleryCard = ({ item, user }: any) => {
             <CardContent className="p-4">
               <Carousel className="w-full max-w-xs mx-auto h-[80%]">
                 <CarouselContent>
-                  {item.image_data.map((image: any) => (
+                  {item.image_metadata.image_data.map((image: any) => (
                     <CarouselItem key={image.id}>
                       <Card>
                         <CardContent className="p-6 bg-white">
@@ -102,11 +98,11 @@ const GalleryCard = ({ item, user }: any) => {
                 <CarouselNext />
               </Carousel>
               <div className="flex flex-col items-center justify-center gap-2 text-white">
-                <p>{item.positive_prompt}</p>
-                <p>{item.negative_prompt}</p>
-                <p>{item.sampler}</p>
-                <p>{item.model}</p>
-                <p>{item.public_view}</p>
+                <p>{item.image_metadata.positive_prompt}</p>
+                <p>{item.image_metadata.negative_prompt}</p>
+                <p>{item.image_metadata.sampler}</p>
+                <p>{item.image_metadata.model}</p>
+                <p>{item.image_metadata.public_view}</p>
               </div>
             </CardContent>
           </Card>
@@ -116,4 +112,4 @@ const GalleryCard = ({ item, user }: any) => {
   );
 };
 
-export default GalleryCard;
+export default LikesGallery;
