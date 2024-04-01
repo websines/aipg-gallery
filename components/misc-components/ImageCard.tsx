@@ -46,7 +46,7 @@ const ImageCard = ({ item, user }: any) => {
             {user && (
               <button
                 onClick={() => toggleLike(item.id, user.id)}
-                className="absolute top-2 right-2 bg-gray-900 bg-opacity-70 p-1 rounded-full opacity-0 group-hover:opacity-100 focus:outline-none"
+                className="absolute top-2 right-2 bg-gray-900 bg-opacity-70 p-1 rounded-full opacity-0 group-hover:opacity-100 outline-none"
               >
                 {isLiked ? (
                   <Heart className="w-6 h-6 fill-red-500" />

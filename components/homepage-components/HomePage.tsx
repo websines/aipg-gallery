@@ -2,7 +2,7 @@
 import SearchBar from "@/components/homepage-components/SearchBar";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { useDebounce } from "@/components/ui/multiple-selector";
+import { useDebounce } from "use-debounce";
 import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
 import { fetchPublicImages } from "@/app/_api/fetchPublicImages";
 import { User } from "@supabase/supabase-js";
@@ -46,7 +46,7 @@ const Homepage = ({ user }: { user: User | null }) => {
   return (
     <>
       <div className="flex flex-col justify-center items-center my-8">
-        <SearchBar />
+        <SearchBar value={search} onChange={(e) => setSearch(e.target.value)} />
         <div className="my-4">
           {isLoading ? (
             <LoadingSpinner />
