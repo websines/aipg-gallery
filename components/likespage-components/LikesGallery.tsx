@@ -71,34 +71,40 @@ const LikesGallery = ({ item, userID }: any) => {
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="mt-4">
-          <Card>
-            <CardHeader className="flex flex-row gap-2 items-center justify-start">
-              {userID ? (
-                <button
-                  onClick={() => toggleLike(item.image_metadata.id, userID)}
-                  className="outline-none"
-                >
-                  {isLiked ? (
-                    <Heart className="w-6 h-6 fill-red-500" />
-                  ) : (
-                    <Heart className="w-6 h-6" />
-                  )}
-                </button>
-              ) : (
-                <div>Login to like</div>
-              )}
-            </CardHeader>
-            <CardContent className="p-4">
-              <Carousel className="w-full max-w-xs mx-auto h-[80%]">
+        <DialogContent className="h-auto md:min-w-[70%]">
+          <Card className="bg-gray-950 p-4">
+            <CardContent className="p-4 flex flex-col md:flex-row items-center justify-center gap-6 relative">
+              <div className="flex flex-col items-center justify-center gap-2 text-white">
+                <div className="p-2 my-4 rounded-sm bg-opacity-40 bg-green-700">
+                  <p>{item.image_metadata.positive_prompt}</p>
+                </div>
+                <p>{item.image_metadata.negative_prompt}</p>
+                <p>{item.image_metadata.sampler}</p>
+                <p>{item.image_metadata.model}</p>
+                <p>{item.image_metadata.public_view}</p>
+              </div>
+              <div className="absolute top-2 left-2">
+                {userID ? (
+                  <button onClick={() => toggleLike(item.id, userID)}>
+                    {isLiked ? (
+                      <Heart className="w-6 h-6 fill-red-500" />
+                    ) : (
+                      <Heart className="w-6 h-6 text-gray-300" /> /* Dimmed heart when not liked */
+                    )}
+                  </button>
+                ) : (
+                  <div className="text-gray-400">Login to like</div>
+                )}
+              </div>
+              <Carousel className="w-full mx-auto">
                 <CarouselContent>
                   {item.image_metadata.image_data.map((image: any) => (
                     <CarouselItem key={image.id}>
                       <Card>
-                        <CardContent className="p-6 bg-white">
+                        <CardContent className="p-2 bg-white">
                           <img
                             src={`data:image/jpg;base64,${image.base64_string}`}
-                            className="max-w-full object-cover"
+                            className="w-full h-full object-cover"
                             alt={image.seed}
                           />
                         </CardContent>
@@ -109,13 +115,6 @@ const LikesGallery = ({ item, userID }: any) => {
                 <CarouselPrevious />
                 <CarouselNext />
               </Carousel>
-              <div className="flex flex-col items-center justify-center gap-2 text-white">
-                <p>{item.image_metadata.positive_prompt}</p>
-                <p>{item.image_metadata.negative_prompt}</p>
-                <p>{item.image_metadata.sampler}</p>
-                <p>{item.image_metadata.model}</p>
-                <p>{item.image_metadata.public_view}</p>
-              </div>
             </CardContent>
           </Card>
         </DialogContent>

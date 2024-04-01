@@ -62,34 +62,40 @@ const ImageCard = ({ item, user }: any) => {
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="mt-4">
-          <Card>
-            <CardHeader className="flex flex-row gap-2 items-center justify-start">
-              {user ? (
-                <button
-                  onClick={() => toggleLike(item.id, user.id)}
-                  className=""
-                >
-                  {isLiked ? (
-                    <Heart className="w-6 h-6 fill-red-500" />
-                  ) : (
-                    <Heart className="w-6 h-6" />
-                  )}
-                </button>
-              ) : (
-                <div>Login to like</div>
-              )}
-            </CardHeader>
-            <CardContent className="p-4">
-              <Carousel className="w-full max-w-xs mx-auto h-[80%]">
+        <DialogContent className="h-auto md:min-w-[70%]">
+          <Card className="bg-gray-950 p-4">
+            <CardContent className="p-4 flex flex-col md:flex-row items-center justify-center gap-6 relative">
+              <div className="flex flex-col items-center justify-center gap-2 text-white">
+                <div className="p-2 my-4 rounded-sm bg-opacity-40 bg-green-700">
+                  <p>{item.positive_prompt}</p>
+                </div>
+                <p>{item.negative_prompt}</p>
+                <p>{item.sampler}</p>
+                <p>{item.model}</p>
+                <p>{item.public_view}</p>
+              </div>
+              <div className="absolute top-2 left-2">
+                {user ? (
+                  <button onClick={() => toggleLike(item.id, user.id)}>
+                    {isLiked ? (
+                      <Heart className="w-6 h-6 fill-red-500" />
+                    ) : (
+                      <Heart className="w-6 h-6 text-gray-300" /> /* Dimmed heart when not liked */
+                    )}
+                  </button>
+                ) : (
+                  <div className="text-gray-400">Login to like</div>
+                )}
+              </div>
+              <Carousel className="w-full mx-auto">
                 <CarouselContent>
                   {item.image_data.map((image: any) => (
                     <CarouselItem key={image.id}>
                       <Card>
-                        <CardContent className="p-6 bg-white">
+                        <CardContent className="p-2 bg-white">
                           <img
                             src={`data:image/jpg;base64,${image.base64_string}`}
-                            className="max-w-full object-cover"
+                            className="w-full h-full object-cover"
                             alt={image.seed}
                           />
                         </CardContent>
@@ -100,13 +106,6 @@ const ImageCard = ({ item, user }: any) => {
                 <CarouselPrevious />
                 <CarouselNext />
               </Carousel>
-              <div className="flex flex-col items-center justify-center gap-2 text-white">
-                <p>{item.positive_prompt}</p>
-                <p>{item.negative_prompt}</p>
-                <p>{item.sampler}</p>
-                <p>{item.model}</p>
-                <p>{item.public_view}</p>
-              </div>
             </CardContent>
           </Card>
         </DialogContent>
