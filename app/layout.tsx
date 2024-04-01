@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import ImageProvider from "./_providers/ImageProvider";
 import NavBarComponent from "@/components/Navs/NavBarComponent";
 import { Toaster } from "@/components/ui/toaster";
+import FooterNav from "@/components/Navs/FooterNav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,6 +30,7 @@ export default function RootLayout({
           <ImageProvider>
             <NavBarComponent />
             {children}
+            <FooterNav />
             <Toaster />
           </ImageProvider>
         </ThemeProvider>
