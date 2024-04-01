@@ -8,7 +8,7 @@ const FooterNav = () => {
   const pathname = usePathname();
 
   return (
-    <div className="md:hidden flex fixed bottom-0 py-4 px-2 z-10  w-full bg-zinc-950 backdrop-blur-lg">
+    <div className="md:hidden flex fixed bottom-0 p-2 z-10  w-full bg-zinc-950/30 backdrop-blur-lg">
       <div className="flex flex-row justify-around items-center bg-transparent w-full">
         <Link
           href="/"
