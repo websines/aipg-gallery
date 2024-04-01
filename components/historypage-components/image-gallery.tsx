@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import {
   Carousel,
@@ -22,13 +14,13 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 
 import { fetchUserGeneratedImages } from "@/app/_api/getUserGeneratedImages";
 import { useQuery } from "@tanstack/react-query";
+import { LoadingSpinner } from "../misc-components/LoadingSpinner";
 
 const ImageGallery = ({ userId }: any) => {
   const { data, isLoading } = useQuery({
@@ -36,11 +28,9 @@ const ImageGallery = ({ userId }: any) => {
     queryFn: () => fetchUserGeneratedImages(userId),
   });
 
-  if (!isLoading) {
-    console.log(data);
-  }
   return (
     <div>
+      {isLoading && <LoadingSpinner />}
       {!data && (
         <div className="text-white">No images found, generate some</div>
       )}

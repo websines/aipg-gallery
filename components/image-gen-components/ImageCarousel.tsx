@@ -157,11 +157,11 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
                     <CarouselItem key={index}>
                       <div className="p-1">
                         <Card>
-                          <CardContent className="flex aspect-square items-center justify-center p-6 bg-white">
+                          <CardContent className=" p-6 bg-white">
                             {generatedImg && (
                               <img
                                 src={`data:image/jpg;base64,${generatedImg.base64String}`}
-                                className="h-[512px] w-[512px] object-contain"
+                                className="max-w-full object-cover"
                                 alt="img"
                               />
                             )}

@@ -4,8 +4,10 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { fetchImages } from "./_api/fetchImage_demo";
 import { useDebounce } from "@/components/ui/multiple-selector";
-import Loading from "@/components/misc-components/Loading";
 import ImageCard from "@/components/homepage-components/ImageCard";
+import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
+import { fetchPublicImages } from "./_api/fetchPublicImages";
+import GalleryCard from "@/components/homepage-components/GalleryCard";
 
 // interface PhotoType{
 
@@ -18,15 +20,18 @@ const Home = () => {
 
   const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery({
     queryKey: ["images", value],
-    queryFn: ({ pageParam = 1 }) => fetchImages(pageParam as number, value),
+    queryFn: ({ pageParam = 1 }) => fetchPublicImages(pageParam as number),
     getNextPageParam: (lastPage, allPages) => {
+      if (lastPage!.length === 0) return undefined; // Halt if the last page was empty
       const nextPage = allPages.length + 1;
-      return nextPage <= lastPage.total_pages ? nextPage : undefined;
+      return nextPage;
     },
     initialPageParam: 1,
   });
 
-  const photos = data?.pages.flatMap((page) => page.results);
+  const photos = data?.pages.flatMap((page: any) => page);
+
+  console.log(photos);
 
   useEffect(() => {
     if (!hasNextPage) return;
@@ -50,21 +55,21 @@ const Home = () => {
         <SearchBar />
         <div className="my-4">
           {isLoading ? (
-            <Loading />
+            <LoadingSpinner />
           ) : photos && photos.length < 1 ? (
             <p className="mx-auto text-lg font-medium text-white">
-              No image found
+              No images found
             </p>
           ) : (
-            <div className=" columns-2 md:columns-4 xl:columns-6 gap-2 p-3">
+            <div className="flex flex-row gap-2 p-3">
               {photos?.map((photo, idx) => (
-                <ImageCard key={idx} photo={photo} />
+                <GalleryCard key={idx} item={photo} />
               ))}
             </div>
           )}
           {hasNextPage && (
             <div ref={sentinelRef} className="mx-auto">
-              <Loading />
+              <LoadingSpinner />
             </div>
           )}
         </div>
