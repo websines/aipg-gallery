@@ -1,20 +1,23 @@
 "use client";
-
+import HistorySearch from "@/components/historypage-components/search-bar";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useDebounce } from "@/components/ui/multiple-selector";
 import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
-import { fetchUserLikedImages } from "@/app/_api/fetchUserLikedImages";
-import LikesGallery from "./LikesGallery";
+import ImageCard from "@/components/misc-components/ImageCard";
+import { fetchUserGeneratedImages } from "@/app/_api/getUserGeneratedImages";
 
-const LikesPage = ({ user }: { user: User | null }) => {
+const HistoryPage = ({ user }: { user: User | null }) => {
   const sentinelRef = useRef(null);
+  const [search, setSearch] = useState("");
+  const [value] = useDebounce(search, 300);
 
   const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery({
-    queryKey: ["userLikedImages", user?.id],
+    queryKey: ["usergeneratedImages", value, user?.id],
     queryFn: ({ pageParam = 1 }) =>
-      fetchUserLikedImages(user?.id, pageParam as number),
+      fetchUserGeneratedImages(user?.id, pageParam as number),
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage!.length === 0) return undefined; // Halt if the last page was empty
       const nextPage = allPages.length + 1;
@@ -44,6 +47,7 @@ const LikesPage = ({ user }: { user: User | null }) => {
   return (
     <>
       <div className="flex flex-col justify-center items-center my-8">
+        <HistorySearch />
         <div className="my-4">
           {isLoading ? (
             <LoadingSpinner />
@@ -61,7 +65,7 @@ const LikesPage = ({ user }: { user: User | null }) => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <LikesGallery item={photo} userID={user?.id} />
+                  <ImageCard item={photo} user={user?.id} />
                 </motion.div>
               ))}
             </div>
@@ -77,4 +81,4 @@ const LikesPage = ({ user }: { user: User | null }) => {
   );
 };
 
-export default LikesPage;
+export default HistoryPage;

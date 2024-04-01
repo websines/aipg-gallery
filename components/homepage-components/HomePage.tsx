@@ -5,8 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { useDebounce } from "@/components/ui/multiple-selector";
 import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
 import { fetchPublicImages } from "@/app/_api/fetchPublicImages";
-import GalleryCard from "@/components/homepage-components/GalleryCard";
 import { User } from "@supabase/supabase-js";
+import { motion } from "framer-motion";
+import ImageCard from "@/components/misc-components/ImageCard";
 
 const Homepage = ({ user }: { user: User | null }) => {
   const sentinelRef = useRef(null);
@@ -54,9 +55,17 @@ const Homepage = ({ user }: { user: User | null }) => {
               No images found
             </p>
           ) : (
-            <div className="flex flex-row gap-2 p-3">
+            <div className="columns-2 md:columns-4 xl:columns-5 p-2 gap-2 space-y-2">
               {photos?.map((photo, idx) => (
-                <GalleryCard key={idx} item={photo} user={user?.id} />
+                <motion.div
+                  key={idx}
+                  className="break-inside-avoid"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <ImageCard item={photo} user={user?.id} />
+                </motion.div>
               ))}
             </div>
           )}
