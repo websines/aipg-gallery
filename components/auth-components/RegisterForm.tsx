@@ -29,6 +29,7 @@ const FormSchema = z
     confirm: z.string().min(6, {
       message: "Password is required.",
     }),
+    // username: z.string(),
   })
   .refine((data) => data.confirm === data.password, {
     message: "Password did not match",
@@ -44,6 +45,7 @@ export default function RegisterForm() {
       email: "",
       password: "",
       confirm: "",
+      // username: "",
     },
   });
 
@@ -54,6 +56,7 @@ export default function RegisterForm() {
       const { error } = JSON.parse(response!);
 
       if (error?.message) {
+        console.log(error);
         toast({
           description: error?.message,
         });
@@ -125,6 +128,25 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
+        {/* <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Your Username"
+                  {...field}
+                  type="text"
+                  onChange={field.onChange}
+                />
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        /> */}
 
         <Button type="submit" className="w-full flex gap-2 flex-row">
           Register {isPending && <LoadingSpinner className="text-black" />}

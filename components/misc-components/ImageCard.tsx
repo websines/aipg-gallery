@@ -17,6 +17,7 @@ const ImageCard = ({ item, user }: any) => {
   const { data: isLiked, refetch } = useQuery({
     queryKey: ["imageLikeStatus", item.id, user], // Unique query key
     queryFn: () => fetchLikedStatus(item.id, user),
+    enabled: !!user,
   });
 
   const { mutate } = useMutation({
@@ -62,7 +63,7 @@ const ImageCard = ({ item, user }: any) => {
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="h-auto md:min-w-[70%]">
+        <DialogContent className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 overflow-y-auto max-h-screen grid place-items-center">
           <Card className="bg-gray-950 p-4">
             <CardContent className="p-4 flex flex-col md:flex-row items-center justify-center gap-6 relative">
               <div className="flex flex-col items-center justify-center gap-2 text-white">

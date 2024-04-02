@@ -112,6 +112,8 @@ type MetaData = {
 const ImageGenForm = ({ user }: { user: User | null }) => {
   const [generateDisabled, setGenerateDisable] = useState(true);
   const [jobID, setJob] = useState("");
+  const { toast } = useToast();
+
   const [metadata, setMetadata] = useState<MetaData>({
     positivePrompt: "",
     negativePrompt: "",
@@ -127,10 +129,10 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
       postivePrompt: "",
       negativePrompt: "",
       sampler: "",
-      batchSize: 4,
-      steps: 15,
-      width: 512,
-      height: 512,
+      batchSize: 1,
+      steps: 30,
+      width: 832,
+      height: 1152,
       guidance: 7,
       clipskip: 1,
       model: "",
@@ -175,6 +177,12 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
     const transformedData = transformFormData(data);
 
     const response = await createImage(transformedData);
+
+    if (response.message) {
+      toast({
+        description: response.message,
+      });
+    }
 
     setJob(response.jobId!);
   };
