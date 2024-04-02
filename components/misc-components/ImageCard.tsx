@@ -87,7 +87,7 @@ const ImageCard = ({ item, user }: any) => {
                 <div className="text-gray-400">Login to like</div>
               )}
             </div>
-            <Carousel className="w-full mx-auto sm:order-2 order-1">
+            <Carousel className="w-full mx-auto sm:order-2 order-1 my-6 md:my-0">
               <CarouselContent>
                 {item.image_data.map((image: any) => (
                   <CarouselItem key={image.id}>
