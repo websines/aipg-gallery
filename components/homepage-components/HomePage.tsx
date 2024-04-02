@@ -48,7 +48,7 @@ const Homepage = ({ user }: { user: User | null }) => {
     <>
       <div className="flex flex-col justify-center items-center my-8">
         <SearchBar value={search} onChange={(e) => setSearch(e.target.value)} />
-        <div className="my-4">
+        <div className="my-4 mx-auto">
           {isLoading ? (
             <LoadingSpinner />
           ) : photos && photos.length < 1 ? (

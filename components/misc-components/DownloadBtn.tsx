@@ -28,7 +28,7 @@ function DownloadBtnComponent({ photo }: any) {
   return (
     <Button
       variant="outline"
-      className="bg-black/80 top-5 rounded-full hover:bg-black/50 right-3 absolute p-2 border"
+      className="bg-black/80 bottom-5 rounded-full hover:bg-black/50 right-3 absolute p-2 border"
       onClick={() => downloadImage(photo.base64_string, photo.id)}
     >
       {" "}

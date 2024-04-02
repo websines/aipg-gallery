@@ -17,27 +17,35 @@ import { AuthForm } from "../auth-components/AuthForm";
 import { SignOutUser } from "@/actions/auth-actions";
 import { type User as UserType } from "@supabase/supabase-js";
 
-export async function UserNav({ user }: { user: UserType | null }) {
+export function UserNav({ user }: { user: UserType | null }) {
   return (
     <Dialog>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="/avatars/01.png" alt="@shadcn" />
-              <AvatarFallback>
-                <User2Icon className="w-4 h-4" />
-              </AvatarFallback>
-            </Avatar>
-          </Button>
+          {user ? (
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Avatar className="h-8 w-8">
+                <User2Icon className="w-6 h-6" />
+              </Avatar>
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              className="px-4 py-2 rounded-sm focus:outline-none flex flex-row gap-1 items-center outline-none"
+            >
+              <span className="text-sm font-medium">Get started</span>{" "}
+            </Button>
+          )}
         </DropdownMenuTrigger>
         {user ? (
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.id}</p>
-                <p className="text-xs leading-none text-muted-foreground">
+                <p className="text-sm font-medium leading-none">
                   {user?.email}
+                </p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.aud}
                 </p>
               </div>
             </DropdownMenuLabel>

@@ -12,6 +12,9 @@ import { Heart } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchLikedStatus, likeorUnlikeImages } from "@/app/_api/likeImages";
 import DownloadBtnComponent from "./DownloadBtn";
+import { AuthForm } from "@/components/auth-components/AuthForm";
+import { Button } from "../ui/button";
+import { deleteUserImages } from "@/app/_api/deleteImage";
 
 const ImageCard = ({ item, user }: any) => {
   const { data: isLiked, refetch } = useQuery({
@@ -20,16 +23,21 @@ const ImageCard = ({ item, user }: any) => {
     enabled: !!user,
   });
 
-  const { mutate } = useMutation({
+  const { mutate: likeMutate } = useMutation({
     mutationKey: ["likeMutation", item.id, user],
     mutationFn: () => likeorUnlikeImages(user, item.id),
     onSuccess: async () => await refetch(),
     onError: (error) => console.error(error.message),
   });
 
+  const { mutate: deleteMutate } = useMutation({
+    mutationKey: ["deleteImages", item.id, user],
+    mutationFn: () => deleteUserImages(item.id),
+  });
+
   const toggleLike = (itemID: any, userID: any) => {
     if (user) {
-      mutate(userID, itemID);
+      likeMutate(userID, itemID);
     }
   };
   return (
@@ -46,7 +54,7 @@ const ImageCard = ({ item, user }: any) => {
             />
             {user && (
               <button
-                onClick={() => toggleLike(item.id, user.id)}
+                onClick={() => toggleLike(item.id, user)}
                 className="absolute top-2 right-2 bg-gray-900 bg-opacity-70 p-1 rounded-full opacity-0 group-hover:opacity-100 outline-none"
               >
                 {isLiked ? (
@@ -63,35 +71,50 @@ const ImageCard = ({ item, user }: any) => {
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-transparent max-h-[80vh] md:max-h-[95vh] no-scrollbar backdrop-blur-md">
+        <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-transaprent max-h-[80vh] md:max-h-[95vh] no-scrollbar backdrop-blur-md">
           <div className="p-4 flex flex-col md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg">
-            <div className="flex flex-col backdrop-blur-lg items-center justify-center gap-2 text-white md:w-[80%] order-2 sm:order-1">
-              <div className="p-2 my-4 rounded-sm bg-opacity-40 bg-green-700">
-                <p>{item.positive_prompt}</p>
+            <div className="flex flex-col items-start h-full justify-start gap-2 text-white md:w-[80%] order-2 sm:order-1">
+              <div className="p-4 my-4 bg-opacity-40 bg-green-500/50 rounded-lg flex flex-col items-start justify-start ">
+                <p className="text-sm text-gray-300">Positive Prompt</p>
+                <p className="text-md font-medium">{item.positive_prompt}</p>
               </div>
-              <p>{item.negative_prompt}</p>
-              <p>{item.sampler}</p>
-              <p>{item.model}</p>
-              <p>{item.public_view}</p>
-            </div>
-            <div className="absolute top-2 left-2">
-              {user ? (
-                <button onClick={() => toggleLike(item.id, user.id)}>
-                  {isLiked ? (
-                    <Heart className="w-6 h-6 fill-red-500" />
-                  ) : (
-                    <Heart className="w-6 h-6 text-gray-300" /> /* Dimmed heart when not liked */
-                  )}
-                </button>
-              ) : (
-                <div className="text-gray-400">Login to like</div>
+              <div className="grid grid-cols-3 gap-4 p-4 bg-gray-800/50 rounded-lg bg-opacity-40 w-full">
+                <div className="flex flex-col justify-start items-start gap-1">
+                  <p className="text-sm text-gray-300">Model</p>
+                  <p className="text-md font-medium">{item.model}</p>
+                </div>
+                <div className="flex flex-col justify-start items-start gap-1">
+                  <p className="text-sm text-gray-300">Sampler</p>
+                  <p className="text-md font-medium">{item.sampler}</p>
+                </div>
+                <div className="flex flex-col justify-start items-start gap-1">
+                  <p className="text-sm text-gray-300">Guidance</p>
+                  <p className="text-md font-medium">{item.guidance}</p>
+                </div>
+              </div>
+
+              <div className="p-4 my-4 bg-opacity-40 bg-red-500/50 rounded-lg flex flex-col items-start justify-start ">
+                <p className="text-sm text-gray-300">Negative Prompt</p>
+                <p className="text-md font-medium tracking-tight">
+                  {item.negative_prompt}
+                </p>
+              </div>
+
+              {user === item.user_id && (
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteMutate(item.id)}
+                >
+                  Delete
+                </Button>
               )}
             </div>
-            <Carousel className="w-full mx-auto sm:order-2 order-1 my-6 md:my-0">
+
+            <Carousel className="w-full mx-auto sm:order-2 order-1 my-6 md:my-0 relative">
               <CarouselContent>
                 {item.image_data.map((image: any) => (
                   <CarouselItem key={image.id}>
-                    <div className="p-2 bg-white relative">
+                    <div className="p-0 bg-white relative">
                       <img
                         src={`data:image/jpg;base64,${image.base64_string}`}
                         className="w-full h-full object-cover"
@@ -99,11 +122,31 @@ const ImageCard = ({ item, user }: any) => {
                       />
                       <DownloadBtnComponent photo={image} />
                     </div>
+                    <div className="absolute hover:bg-black/50 border rounded-xl p-2 items-center top-5 right-5 bg-black/80">
+                      {user ? (
+                        <button onClick={() => toggleLike(item.id, user)}>
+                          {isLiked ? (
+                            <Heart className="w-6 h-6 fill-red-500" />
+                          ) : (
+                            <Heart className="w-6 h-6 text-gray-300" /> /* Dimmed heart when not liked */
+                          )}
+                        </button>
+                      ) : (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Heart className="w-6 h-6 text-gray-300 cursor-pointer " />
+                          </DialogTrigger>
+                          <DialogContent>
+                            <AuthForm />
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </div>
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
+              <CarouselPrevious className="absolute top-1/2 left-3" />
+              <CarouselNext className="absolute top-1/2 right-3" />
             </Carousel>
           </div>
         </DialogContent>

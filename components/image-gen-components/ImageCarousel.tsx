@@ -34,7 +34,6 @@ import { User } from "@supabase/supabase-js";
 import useImageMetadataStore from "@/stores/ImageMetadataStore";
 
 import { saveImageData, saveMetadata } from "@/app/_api/saveImageToSupabase";
-import { base64toBlob } from "@/utils/helperUtils";
 
 const ImageCarousel = ({ user }: { user: User | null }) => {
   const jobID = useJobIdStore((state: any) => state.jobId);
@@ -43,11 +42,7 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
 
   const [finalImages, setImages] = useState<any>(null);
   const [shouldRefetch, setShouldRefetch] = useState(true);
-  const {
-    data: performance,
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: performance } = useQuery({
     queryKey: ["performance"],
     queryFn: () => fetchHordePerformace(),
     refetchOnMount: "always",
@@ -81,7 +76,6 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
 
   useEffect(() => {
     if (finalImages != null) {
-      console.log("adding images...");
       finalImages.generations.map((item: any) => {
         addImg({
           base64String: item.base64String,
@@ -192,7 +186,9 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
               </span>
             </div>
             <div className="text-sm text-center">Job ID: {jobID as string}</div>
-            <div>Wait Time: {imgStatus?.wait_time} seconds</div>
+            <div className="text-sm text-center font-medium transition duration-100 linear">
+              Wait Time: {imgStatus?.wait_time} seconds
+            </div>
           </CardFooter>
         )}
         {finalImages?.success && (
