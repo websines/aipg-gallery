@@ -23,8 +23,8 @@ export function UserNav({ user }: { user: UserType | null }) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           {user ? (
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
+            <Button variant="ghost" className="h-8 w-8 rounded-full">
+              <Avatar className="h-8 w-8 p-1">
                 <User2Icon className="w-6 h-6" />
               </Avatar>
             </Button>
