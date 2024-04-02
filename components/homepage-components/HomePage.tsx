@@ -16,7 +16,8 @@ const Homepage = ({ user }: { user: User | null }) => {
 
   const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery({
     queryKey: ["images", value],
-    queryFn: ({ pageParam = 1 }) => fetchPublicImages(pageParam as number),
+    queryFn: ({ pageParam = 1 }) =>
+      fetchPublicImages(pageParam as number, value),
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage!.length === 0) return undefined; // Halt if the last page was empty
       const nextPage = allPages.length + 1;

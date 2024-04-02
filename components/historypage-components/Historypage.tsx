@@ -2,7 +2,7 @@
 import HistorySearch from "@/components/historypage-components/search-bar";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { useDebounce } from "@/components/ui/multiple-selector";
+import { useDebounce } from "use-debounce";
 import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
@@ -17,7 +17,7 @@ const HistoryPage = ({ user }: { user: User | null }) => {
   const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery({
     queryKey: ["usergeneratedImages", value, user?.id],
     queryFn: ({ pageParam = 1 }) =>
-      fetchUserGeneratedImages(user?.id, pageParam as number),
+      fetchUserGeneratedImages(user?.id, pageParam as number, value),
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage!.length === 0) return undefined; // Halt if the last page was empty
       const nextPage = allPages.length + 1;
@@ -47,7 +47,10 @@ const HistoryPage = ({ user }: { user: User | null }) => {
   return (
     <>
       <div className="flex flex-col justify-center items-center my-8">
-        <HistorySearch />
+        <HistorySearch
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <div className="my-4">
           {isLoading ? (
             <LoadingSpinner />

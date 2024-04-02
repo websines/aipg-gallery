@@ -12,7 +12,12 @@ import {
 import { useState } from "react";
 import Link from "next/link";
 
-const HistorySearch = () => {
+type SearchProps = {
+  onChange?: React.ChangeEventHandler<HTMLInputElement> | undefined;
+  value?: string | number | readonly string[] | undefined;
+};
+
+const HistorySearch = ({ value, onChange }: SearchProps) => {
   const [sliderValue, setSliderValue] = useState(4);
 
   const handleSliderChange = (value: any) => {
@@ -32,6 +37,8 @@ const HistorySearch = () => {
           type="text"
           placeholder="Search"
           className="pl-12 pr-4 rounded-xl outline-blue-500 outline-1"
+          onChange={onChange}
+          value={value}
         />
       </div>
       <div className="flex flex-row space-x-2">
