@@ -63,7 +63,7 @@ const ImageCard = ({ item, user }: any) => {
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="md:min-w-[70%] overflow-y-scroll max-h-screen no-scrollbar ">
+        <DialogContent className="md:min-w-[70%] overflow-y-scroll max-h-[80vh] md:max-h-screen no-scrollbar ">
           <Card className="bg-gray-950 p-4">
             <CardContent className="p-4 flex flex-col md:flex-row items-center justify-center gap-6 relative">
               <div className="flex flex-col items-center justify-center gap-2 text-white">
