@@ -8,10 +8,10 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Heart } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchLikedStatus, likeorUnlikeImages } from "@/app/_api/likeImages";
+import DownloadBtnComponent from "./DownloadBtn";
 
 const ImageCard = ({ item, user }: any) => {
   const { data: isLiked, refetch } = useQuery({
@@ -63,52 +63,49 @@ const ImageCard = ({ item, user }: any) => {
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="md:min-w-[70%] overflow-y-scroll max-h-[80vh] md:max-h-screen no-scrollbar ">
-          <Card className="bg-gray-950 p-4">
-            <CardContent className="p-4 flex flex-col md:flex-row items-center justify-center gap-6 relative">
-              <div className="flex flex-col items-center justify-center gap-2 text-white">
-                <div className="p-2 my-4 rounded-sm bg-opacity-40 bg-green-700">
-                  <p>{item.positive_prompt}</p>
-                </div>
-                <p>{item.negative_prompt}</p>
-                <p>{item.sampler}</p>
-                <p>{item.model}</p>
-                <p>{item.public_view}</p>
+        <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-black/30 max-h-[80vh] md:max-h-screen no-scrollbar backdrop-blur-md">
+          <div className="p-4 flex flex-col md:flex-row bg-black/30 items-center justify-center gap-6 relative backdrop-blur-lg">
+            <div className="flex flex-col bg-black/30 backdrop-blur-lg items-center justify-center gap-2 text-white">
+              <div className="p-2 my-4 rounded-sm bg-opacity-40 bg-green-700">
+                <p>{item.positive_prompt}</p>
               </div>
-              <div className="absolute top-2 left-2">
-                {user ? (
-                  <button onClick={() => toggleLike(item.id, user.id)}>
-                    {isLiked ? (
-                      <Heart className="w-6 h-6 fill-red-500" />
-                    ) : (
-                      <Heart className="w-6 h-6 text-gray-300" /> /* Dimmed heart when not liked */
-                    )}
-                  </button>
-                ) : (
-                  <div className="text-gray-400">Login to like</div>
-                )}
-              </div>
-              <Carousel className="w-full mx-auto">
-                <CarouselContent>
-                  {item.image_data.map((image: any) => (
-                    <CarouselItem key={image.id}>
-                      <Card>
-                        <CardContent className="p-2 bg-white">
-                          <img
-                            src={`data:image/jpg;base64,${image.base64_string}`}
-                            className="w-full h-full object-cover"
-                            alt={image.seed}
-                          />
-                        </CardContent>
-                      </Card>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
-            </CardContent>
-          </Card>
+              <p>{item.negative_prompt}</p>
+              <p>{item.sampler}</p>
+              <p>{item.model}</p>
+              <p>{item.public_view}</p>
+            </div>
+            <div className="absolute top-2 left-2">
+              {user ? (
+                <button onClick={() => toggleLike(item.id, user.id)}>
+                  {isLiked ? (
+                    <Heart className="w-6 h-6 fill-red-500" />
+                  ) : (
+                    <Heart className="w-6 h-6 text-gray-300" /> /* Dimmed heart when not liked */
+                  )}
+                </button>
+              ) : (
+                <div className="text-gray-400">Login to like</div>
+              )}
+            </div>
+            <Carousel className="w-full mx-auto">
+              <CarouselContent>
+                {item.image_data.map((image: any) => (
+                  <CarouselItem key={image.id}>
+                    <div className="p-2 bg-white relative">
+                      <img
+                        src={`data:image/jpg;base64,${image.base64_string}`}
+                        className="w-full h-full object-cover"
+                        alt={image.seed}
+                      />
+                      <DownloadBtnComponent photo={image} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
