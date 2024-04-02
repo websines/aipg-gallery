@@ -63,9 +63,9 @@ const ImageCard = ({ item, user }: any) => {
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-black/30 max-h-[80vh] md:max-h-screen no-scrollbar backdrop-blur-md">
-          <div className="p-4 flex flex-col md:flex-row bg-black/30 items-center justify-center gap-6 relative backdrop-blur-lg">
-            <div className="flex flex-col bg-black/30 backdrop-blur-lg items-center justify-center gap-2 text-white">
+        <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-transparent max-h-[80vh] md:max-h-[95vh] no-scrollbar backdrop-blur-md">
+          <div className="p-4 flex flex-col md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg">
+            <div className="flex flex-col backdrop-blur-lg items-center justify-center gap-2 text-white md:w-[80%] order-2 sm:order-1">
               <div className="p-2 my-4 rounded-sm bg-opacity-40 bg-green-700">
                 <p>{item.positive_prompt}</p>
               </div>
@@ -87,7 +87,7 @@ const ImageCard = ({ item, user }: any) => {
                 <div className="text-gray-400">Login to like</div>
               )}
             </div>
-            <Carousel className="w-full mx-auto">
+            <Carousel className="w-full mx-auto sm:order-2 order-1">
               <CarouselContent>
                 {item.image_data.map((image: any) => (
                   <CarouselItem key={image.id}>
