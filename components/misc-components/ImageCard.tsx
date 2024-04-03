@@ -15,6 +15,7 @@ import DownloadBtnComponent from "./DownloadBtn";
 import { AuthForm } from "@/components/auth-components/AuthForm";
 import { Button } from "../ui/button";
 import { deleteUserImages } from "@/app/_api/deleteImage";
+import CarouselComponent from "./CarouselComponent";
 
 const ImageCard = ({ item, user }: any) => {
   const { data: isLiked, refetch } = useQuery({
@@ -73,8 +74,8 @@ const ImageCard = ({ item, user }: any) => {
         </DialogTrigger>
         <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-transaprent max-h-[80vh] md:max-h-[95vh] no-scrollbar backdrop-blur-md">
           <div className="p-4 flex flex-col md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg">
-            <div className="flex flex-col items-start h-full justify-start gap-2 text-white md:w-[80%] order-2 sm:order-1">
-              <div className="p-4 my-4 bg-opacity-40 bg-green-500/50 rounded-lg flex flex-col items-start justify-start ">
+            <div className="flex flex-col items-start h-full justify-start gap-2 text-white md:w-[80%]">
+              <div className="p-4 my-4 bg-opacity-40 bg-gray-800/50 rounded-lg flex flex-col items-start justify-start ">
                 <p className="text-sm text-gray-300">Positive Prompt</p>
                 <p className="text-md font-medium">{item.positive_prompt}</p>
               </div>
@@ -93,7 +94,7 @@ const ImageCard = ({ item, user }: any) => {
                 </div>
               </div>
 
-              <div className="p-4 my-4 bg-opacity-40 bg-red-500/50 rounded-lg flex flex-col items-start justify-start ">
+              <div className="p-4 my-4 bg-opacity-40 bg-gray-800/50 rounded-lg flex flex-col items-start justify-start ">
                 <p className="text-sm text-gray-300">Negative Prompt</p>
                 <p className="text-md font-medium tracking-tight">
                   {item.negative_prompt}
@@ -110,44 +111,12 @@ const ImageCard = ({ item, user }: any) => {
               )}
             </div>
 
-            <Carousel className="w-full mx-auto sm:order-2 order-1 my-6 md:my-0 relative">
-              <CarouselContent>
-                {item.image_data.map((image: any) => (
-                  <CarouselItem key={image.id}>
-                    <div className="p-0 bg-white relative">
-                      <img
-                        src={`data:image/jpg;base64,${image.base64_string}`}
-                        className="w-full h-full object-cover"
-                        alt={image.seed}
-                      />
-                      <DownloadBtnComponent photo={image} />
-                    </div>
-                    <div className="absolute hover:bg-black/50 border rounded-xl p-2 items-center top-5 right-5 bg-black/80">
-                      {user ? (
-                        <button onClick={() => toggleLike(item.id, user)}>
-                          {isLiked ? (
-                            <Heart className="w-6 h-6 fill-red-500" />
-                          ) : (
-                            <Heart className="w-6 h-6 text-gray-300" /> /* Dimmed heart when not liked */
-                          )}
-                        </button>
-                      ) : (
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Heart className="w-6 h-6 text-gray-300 cursor-pointer " />
-                          </DialogTrigger>
-                          <DialogContent>
-                            <AuthForm />
-                          </DialogContent>
-                        </Dialog>
-                      )}
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="absolute top-1/2 left-3" />
-              <CarouselNext className="absolute top-1/2 right-3" />
-            </Carousel>
+            <CarouselComponent
+              images={item.image_data}
+              isLiked={isLiked}
+              toggleLike={() => toggleLike(item.id, user)}
+              userID={user}
+            />
           </div>
         </DialogContent>
       </Dialog>
