@@ -297,10 +297,9 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
                       <FormControl>
                         <SliderWithCounter
                           min={1}
-                          max={20}
-                          onChange={(value: any) => {
-                            console.log("FormField - onValueChange:", value);
-                            field.onChange(value);
+                          max={4}
+                          onValueChange={(value: any) => {
+                            field.onChange(value[0] || value);
                           }}
                           step={1}
                         />
@@ -325,7 +324,7 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
                           min={1}
                           max={50}
                           onValueChange={(value: any) => {
-                            field.onChange([value]);
+                            field.onChange(value[0] || value);
                           }}
                           step={1}
                         />
@@ -350,7 +349,7 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
                           min={64}
                           max={1024}
                           onValueChange={(value: any) => {
-                            field.onChange([value]);
+                            field.onChange(value[0] || value);
                           }}
                           step={64}
                         />
@@ -375,7 +374,7 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
                           min={64}
                           max={1024}
                           onValueChange={(value: any) => {
-                            field.onChange([value]);
+                            field.onChange(value[0] || value);
                           }}
                           step={64}
                         />
@@ -400,7 +399,7 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
                           min={1}
                           max={24}
                           onValueChange={(value: any) => {
-                            field.onChange([value]);
+                            field.onChange(value[0] || value);
                           }}
                           step={0.5}
                         />
@@ -425,7 +424,7 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
                           min={1}
                           max={10}
                           onValueChange={(value: any) => {
-                            field.onChange([value]);
+                            field.onChange(value[0] || value);
                           }}
                           step={1}
                         />

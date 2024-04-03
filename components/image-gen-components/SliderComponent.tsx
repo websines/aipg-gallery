@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
 import {
   Tooltip,
@@ -10,21 +10,30 @@ import {
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
-function SliderWithCounter({ min, max, step = 1, onChange, value }: any) {
+function SliderWithCounter({ min, max, step = 1, onValueChange }: any) {
   const [sliderValue, setSliderValue] = useState(min);
 
   const handleChange = (newValue: any) => {
-    console.log("SliderWithCounter - newValue:", newValue);
     setSliderValue(newValue);
-    onChange(newValue);
+    onValueChange(newValue);
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = parseInt(e.target.value);
+    if (!isNaN(newValue) && newValue >= min && newValue <= max) {
+      setSliderValue(newValue);
+      handleChange(newValue);
+    }
   };
 
   const handleIncrement = () => {
     setSliderValue(Math.min(sliderValue + step, max));
+    handleChange(Math.min(sliderValue + step, max));
   };
 
   const handleDecrement = () => {
     setSliderValue(Math.max(sliderValue - step, min));
+    handleChange(Math.max(sliderValue - step, min));
   };
 
   return (
@@ -51,7 +60,7 @@ function SliderWithCounter({ min, max, step = 1, onChange, value }: any) {
         <Input
           value={sliderValue}
           className="md:w-[60px]"
-          onChange={(e) => setSliderValue(e.target.value)}
+          onChange={handleInput}
         />
         <Button onClick={handleDecrement} variant={"outline"} type="button">
           -
