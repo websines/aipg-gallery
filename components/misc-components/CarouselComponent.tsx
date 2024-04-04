@@ -64,7 +64,7 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
                   className="w-full h-full object-cover"
                   alt={image.seed}
                 />
-                {/* <DownloadBtnComponent photo={image} /> */}
+                <DownloadBtnComponent photo={image} />
               </div>
               <div className="absolute hover:bg-black/50 border rounded-xl p-2 items-center top-5 right-5 bg-black/80">
                 {userID ? (

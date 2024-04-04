@@ -61,6 +61,7 @@ const formSchema = z.object({
     message: "Prompt cannot be empty",
   }),
   negativePrompt: z.string(),
+  seed: z.string(),
   sampler: z.string(),
   batchSize: z.number(),
   steps: z.number(),
@@ -128,6 +129,7 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
     defaultValues: {
       postivePrompt: "",
       negativePrompt: "",
+      seed: "",
       sampler: "",
       batchSize: 1,
       steps: 15,
@@ -201,7 +203,7 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
           <CardTitle>Image Generator</CardTitle>
           <CardDescription>Generate your favorite images</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col items-center justify-center ">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit)}
@@ -234,6 +236,27 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
                       </FormLabel>
                       <FormControl>
                         <Input placeholder="negative prompts.." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="seed"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex flex-row items-center gap-2">
+                        Seed
+                        <ToolTipComponent tooltipText="Random Seed" />
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Seed.. (if you do not enter, one will be randomly generated)"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

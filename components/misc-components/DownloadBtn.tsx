@@ -8,16 +8,11 @@ import Loading from "./Loading";
 
 function DownloadBtnComponent({ photo }: any) {
   const [downloading, setIsDownloading] = useState(false);
-  async function downloadImage(base64string: string, imageName: string) {
+  async function downloadImage(image_url: string, imageName: string) {
     try {
       setIsDownloading(true);
-      const byteCharacters = atob(base64string);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: "img/jpg" });
+      const response = await fetch(image_url);
+      const blob = await response.blob();
       saveAs(blob, `${imageName}.jpg`);
     } catch (err) {
       console.log(err);
@@ -29,7 +24,7 @@ function DownloadBtnComponent({ photo }: any) {
     <Button
       variant="outline"
       className="bg-black/80 bottom-5 rounded-full hover:bg-black/50 right-3 absolute p-2 border"
-      onClick={() => downloadImage(photo.base64_string, photo.id)}
+      onClick={() => downloadImage(photo.image_url, photo.id)}
     >
       {" "}
       {downloading ? <Loading /> : <DownloadCloudIcon className="w-6 h-6" />}

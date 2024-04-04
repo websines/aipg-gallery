@@ -6,7 +6,7 @@ import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 import { fetchUserLikedImages } from "@/app/_api/fetchUserLikedImages";
-import LikesGallery from "./LikesGallery";
+import ImageCard from "../misc-components/ImageCard";
 
 const LikesPage = ({ user }: { user: User | null }) => {
   const sentinelRef = useRef(null);
@@ -44,6 +44,7 @@ const LikesPage = ({ user }: { user: User | null }) => {
   return (
     <>
       <div className="flex flex-col justify-center items-center my-8">
+        <div className="my-8 flex self-center text-3xl font-medium">Likes</div>
         <div className="my-4">
           {isLoading ? (
             <LoadingSpinner />
@@ -61,7 +62,8 @@ const LikesPage = ({ user }: { user: User | null }) => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <LikesGallery item={photo} userID={user?.id} />
+                  {/* <LikesGallery item={photo} userID={user?.id} /> */}
+                  <ImageCard item={photo.image_metadata} user={user?.id} />
                 </motion.div>
               ))}
             </div>

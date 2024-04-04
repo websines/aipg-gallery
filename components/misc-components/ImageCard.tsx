@@ -9,7 +9,6 @@ import { fetchLikedStatus, likeorUnlikeImages } from "@/app/_api/likeImages";
 import { Button } from "../ui/button";
 import { deleteUserImages } from "@/app/_api/deleteImage";
 import CarouselComponent from "./CarouselComponent";
-import { base64toBlobURL } from "@/utils/imageUtils";
 
 const ImageCard = ({ item, user }: any) => {
   const { data: isLiked, refetch } = useQuery({
@@ -70,22 +69,28 @@ const ImageCard = ({ item, user }: any) => {
         <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-transaprent max-h-[80vh] md:max-h-[95vh] no-scrollbar backdrop-blur-md">
           <div className="p-4 flex flex-col md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg order-2 md:order-1">
             <div className="flex flex-col items-start h-full justify-start gap-2 text-white md:w-[80%]">
-              <div className="p-4 my-4 bg-opacity-40 bg-gray-800/50 rounded-lg flex flex-col items-start justify-start ">
+              <div className="p-4 my-4 bg-opacity-40 bg-gray-800/50 rounded-lg flex flex-col items-start justify-start w-full">
                 <p className="text-sm text-gray-300">Positive Prompt</p>
                 <p className="text-md font-medium">{item.positive_prompt}</p>
               </div>
-              <div className="grid grid-cols-3 gap-4 p-4 bg-gray-800/50 rounded-lg bg-opacity-40 w-full">
-                <div className="flex flex-col justify-start items-start gap-1">
+              <div className="grid grid-cols-2 gap-1 p-4 bg-gray-800/50 rounded-lg bg-opacity-40 w-full space-y-2">
+                <div className="flex flex-col justify-start items-start gap-1 w-full">
                   <p className="text-sm text-gray-300">Model</p>
-                  <p className="text-md font-medium">{item.model}</p>
+                  <p className="text-sm font-medium">{item.model}</p>
                 </div>
                 <div className="flex flex-col justify-start items-start gap-1">
                   <p className="text-sm text-gray-300">Sampler</p>
-                  <p className="text-md font-medium">{item.sampler}</p>
+                  <p className="text-sm font-medium">{item.sampler}</p>
                 </div>
                 <div className="flex flex-col justify-start items-start gap-1">
                   <p className="text-sm text-gray-300">Guidance</p>
-                  <p className="text-md font-medium">{item.guidance}</p>
+                  <p className="text-sm font-medium">{item.guidance}</p>
+                </div>
+                <div className="flex flex-col justify-start items-start gap-1">
+                  <p className="text-sm text-gray-300">Seed</p>
+                  <p className="text-sm font-medium">
+                    {item.image_data[0].seed}
+                  </p>
                 </div>
               </div>
 
