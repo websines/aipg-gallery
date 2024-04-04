@@ -34,7 +34,6 @@ import { User } from "@supabase/supabase-js";
 import useImageMetadataStore from "@/stores/ImageMetadataStore";
 
 import { saveImageData, saveMetadata } from "@/app/_api/saveImageToSupabase";
-import { base64toBlob } from "@/utils/imageUtils";
 
 const ImageCarousel = ({ user }: { user: User | null }) => {
   const jobID = useJobIdStore((state: any) => state.jobId);
@@ -107,7 +106,7 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
 
   return (
     <>
-      <Card>
+      <Card className="w-full p-4 justify-start items-center h-[400px]">
         <CardHeader className="mx-auto flex text-center">
           <CardTitle>AIPG IMAGE GENERATOR</CardTitle>
           <div className="flex flex-row justify-between p-2 m-2 items-center">
@@ -124,7 +123,7 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
             </div>
             <Dialog>
               <DialogTrigger
-                className="hover:bg-gray-800 cursor-pointer"
+                className="hover:bg-gray-800 cursor-pointer p-2 rounded-lg"
                 type="button"
               >
                 Stats

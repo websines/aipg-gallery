@@ -16,9 +16,13 @@ const page = async () => {
 
   return (
     <div className="w-full flex flex-col gap-4 items-center justify-center p-4">
-      {/* {!user && <AlertDialogComponent />} */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full ">
-        <div className="flex flex-col justify-center items-center my-8 w-full ">
+      <div className="text-center my-8">
+        <h1 className="text-3xl md:text-4xl font-semibold ">
+          AIPG IMAGE GENERATOR
+        </h1>
+      </div>
+      <div className="w-full items-center flex flex-col justify-center">
+        <div className=" items-center my-8 w-full ">
           <ImageGenForm user={user} />
         </div>
         <div className="md:my-8 p-4 ">
