@@ -5,7 +5,7 @@ export async function fetchUserGeneratedImages(userId: string | undefined, pageP
 
     try{
 
-        let query = supabase.from("image_metadata").select("*, image_data(id, base64_string, seed)").eq('user_id', userId).order('created_at', { ascending: false }).limit(10).range((pageParam - 1) * 10, pageParam * 10 - 1)
+        let query = supabase.from("image_metadata").select("*, image_data(id, image_url, seed)").eq('user_id', userId).order('created_at', { ascending: false }).limit(10).range((pageParam - 1) * 10, pageParam * 10 - 1)
 
         if(value){
           query = query.textSearch("positive_prompt", `${value}`);

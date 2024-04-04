@@ -42,7 +42,7 @@ const ImageCard = ({ item, user }: any) => {
           <div className="cursor-pointer relative rounded-sm overflow-hidden group">
             <motion.img
               // src={`data:image/jpg;base64,${item.image_data[0].base64_string}`}
-              src={base64toBlobURL(item.image_data[0].base64_string)}
+              src={item.image_data[0].image_url}
               className="max-w-full object-cover rounded-sm"
               alt={item.positive_prompt}
               whileHover={{ scale: 1.02 }}

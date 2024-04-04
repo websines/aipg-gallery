@@ -34,6 +34,7 @@ import { User } from "@supabase/supabase-js";
 import useImageMetadataStore from "@/stores/ImageMetadataStore";
 
 import { saveImageData, saveMetadata } from "@/app/_api/saveImageToSupabase";
+import { base64toBlob } from "@/utils/imageUtils";
 
 const ImageCarousel = ({ user }: { user: User | null }) => {
   const jobID = useJobIdStore((state: any) => state.jobId);

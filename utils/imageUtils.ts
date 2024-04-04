@@ -87,6 +87,23 @@ export const base64toBlobURL = (base64String: string) => {
     }
   }
 
+  export const base64toBlob = (base64String: string) => {
+    try {
+      const byteCharacters = atob(base64String);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "img/jpg" });
+
+      const url = URL.createObjectURL(blob)
+
+      return url
+    } catch (err) {
+      return ''
+    }
+  }
 
   export const isBase64UrlImage = async (base64String: string) => {
     let image = new Image()

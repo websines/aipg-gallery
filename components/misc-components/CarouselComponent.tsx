@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Carousel,
   CarouselContent,
@@ -14,9 +13,9 @@ import { AuthForm } from "@/components/auth-components/AuthForm";
 import { useState, useCallback, useEffect } from "react";
 import DownloadBtnComponent from "./DownloadBtn";
 import { Heart } from "lucide-react";
-import { base64toBlobURL } from "@/utils/imageUtils";
 
 const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
+  console.log(images);
   const [api, setApi] = useState<CarouselApi>();
   const [thumbsapi, setThumbsApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -61,11 +60,11 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
             <CarouselItem key={image.id}>
               <div className="p-0 bg-white relative">
                 <img
-                  src={base64toBlobURL(image.base64_string)}
+                  src={image.image_url}
                   className="w-full h-full object-cover"
                   alt={image.seed}
                 />
-                <DownloadBtnComponent photo={image} />
+                {/* <DownloadBtnComponent photo={image} /> */}
               </div>
               <div className="absolute hover:bg-black/50 border rounded-xl p-2 items-center top-5 right-5 bg-black/80">
                 {userID ? (
@@ -106,7 +105,7 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
               onClick={() => onThumbClick(index)}
             >
               <img
-                src={base64toBlobURL(image.base64_string)}
+                src={image.image_url}
                 className="w-[75px] h-[75px] object-cover rounded-lg"
                 alt={image.seed}
               />
