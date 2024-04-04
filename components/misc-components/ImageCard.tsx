@@ -9,7 +9,6 @@ import { fetchLikedStatus, likeorUnlikeImages } from "@/app/_api/likeImages";
 import { Button } from "../ui/button";
 import { deleteUserImages } from "@/app/_api/deleteImage";
 import CarouselComponent from "./CarouselComponent";
-
 const ImageCard = ({ item, user }: any) => {
   const { data: isLiked, refetch } = useQuery({
     queryKey: ["imageLikeStatus", item.id, user], // Unique query key
