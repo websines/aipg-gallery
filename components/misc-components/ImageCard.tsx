@@ -67,7 +67,7 @@ const ImageCard = ({ item, user }: any) => {
           </div>
         </DialogTrigger>
         <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-transaprent max-h-[80vh] md:max-h-[95vh] no-scrollbar backdrop-blur-md">
-          <div className="p-4 flex flex-col md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg order-2 md:order-1">
+          <div className="p-4 flex flex-col-reverse md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg">
             <div className="flex flex-col items-start h-full justify-start gap-2 text-white md:w-[80%]">
               <div className="p-4 my-4 bg-opacity-40 bg-gray-800/50 rounded-lg flex flex-col items-start justify-start w-full">
                 <p className="text-sm text-gray-300">Positive Prompt</p>
