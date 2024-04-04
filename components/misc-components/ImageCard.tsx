@@ -1,21 +1,15 @@
 "use client";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchLikedStatus, likeorUnlikeImages } from "@/app/_api/likeImages";
-import DownloadBtnComponent from "./DownloadBtn";
-import { AuthForm } from "@/components/auth-components/AuthForm";
+
 import { Button } from "../ui/button";
 import { deleteUserImages } from "@/app/_api/deleteImage";
 import CarouselComponent from "./CarouselComponent";
+import { base64toBlobURL } from "@/utils/imageUtils";
 
 const ImageCard = ({ item, user }: any) => {
   const { data: isLiked, refetch } = useQuery({
@@ -47,7 +41,8 @@ const ImageCard = ({ item, user }: any) => {
         <DialogTrigger asChild>
           <div className="cursor-pointer relative rounded-sm overflow-hidden group">
             <motion.img
-              src={`data:image/jpg;base64,${item.image_data[0].base64_string}`}
+              // src={`data:image/jpg;base64,${item.image_data[0].base64_string}`}
+              src={base64toBlobURL(item.image_data[0].base64_string)}
               className="max-w-full object-cover rounded-sm"
               alt={item.positive_prompt}
               whileHover={{ scale: 1.02 }}
@@ -73,7 +68,7 @@ const ImageCard = ({ item, user }: any) => {
           </div>
         </DialogTrigger>
         <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-transaprent max-h-[80vh] md:max-h-[95vh] no-scrollbar backdrop-blur-md">
-          <div className="p-4 flex flex-col md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg">
+          <div className="p-4 flex flex-col md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg order-2 md:order-1">
             <div className="flex flex-col items-start h-full justify-start gap-2 text-white md:w-[80%]">
               <div className="p-4 my-4 bg-opacity-40 bg-gray-800/50 rounded-lg flex flex-col items-start justify-start ">
                 <p className="text-sm text-gray-300">Positive Prompt</p>

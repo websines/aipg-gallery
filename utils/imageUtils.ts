@@ -69,15 +69,19 @@ export const inferMimeTypeFromBase64 = (base64: string) => {
   }
 
   
-export const base64toBlob = async (base64Data: string) => {
+export const base64toBlobURL = (base64String: string) => {
     try {
-      const base64str = `data:${inferMimeTypeFromBase64(
-        base64Data
-      )};base64,${base64Data}`
-      const base64Response = await fetch(base64str)
-      const blob = await base64Response.blob()
-  
-      return blob
+      const byteCharacters = atob(base64String);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "img/jpg" });
+
+      const url = URL.createObjectURL(blob)
+
+      return url
     } catch (err) {
       return ''
     }

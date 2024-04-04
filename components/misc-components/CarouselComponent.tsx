@@ -14,6 +14,7 @@ import { AuthForm } from "@/components/auth-components/AuthForm";
 import { useState, useCallback, useEffect } from "react";
 import DownloadBtnComponent from "./DownloadBtn";
 import { Heart } from "lucide-react";
+import { base64toBlobURL } from "@/utils/imageUtils";
 
 const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
   const [api, setApi] = useState<CarouselApi>();
@@ -60,7 +61,7 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
             <CarouselItem key={image.id}>
               <div className="p-0 bg-white relative">
                 <img
-                  src={`data:image/jpg;base64,${image.base64_string}`}
+                  src={base64toBlobURL(image.base64_string)}
                   className="w-full h-full object-cover"
                   alt={image.seed}
                 />
@@ -105,7 +106,7 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
               onClick={() => onThumbClick(index)}
             >
               <img
-                src={`data:image/jpg;base64,${image.base64_string}`}
+                src={base64toBlobURL(image.base64_string)}
                 className="w-[75px] h-[75px] object-cover rounded-lg"
                 alt={image.seed}
               />
