@@ -13,6 +13,7 @@ type ImageMetadataStore = {
     metadata: ImageMetaData,
     initializeMetadata: (data: any) => void
     addImage: (data: ImageData) => void
+    resetMetadata: () => void
 };
 
 interface ImageData {
@@ -20,11 +21,8 @@ interface ImageData {
   seed: number; 
 }
 
-
-const useImageMetadataStore = create<ImageMetadataStore>((set) => ({
-    // Initial metadata (consider default values)
-    metadata: {
-      positivePrompt: '',
+const initialMetadataState = {
+  positivePrompt: '',
       negativePrompt: 'cropped, out of focus, symbol, text, logo, door frame, window frame, mirror frame',
       sampler: '',
       model: '',
@@ -36,7 +34,11 @@ const useImageMetadataStore = create<ImageMetadataStore>((set) => ({
           seed: 1
         }
       ]
-    },
+    }
+
+const useImageMetadataStore = create<ImageMetadataStore>((set) => ({
+    // Initial metadata (consider default values)
+    metadata: initialMetadataState,
   
     // Actions to update metadata
     initializeMetadata: (data) => set({ metadata: {
@@ -51,6 +53,8 @@ const useImageMetadataStore = create<ImageMetadataStore>((set) => ({
           imageData: state.metadata.imageData ? [...state.metadata.imageData, imageData] :  [imageData]
       },
     })),
+
+    resetMetadata: () => set({metadata: initialMetadataState})
   }));
   
   export default useImageMetadataStore;

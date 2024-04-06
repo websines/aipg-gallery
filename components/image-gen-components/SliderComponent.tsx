@@ -54,16 +54,17 @@ function SliderWithCounter({ min, max, step = 1, onValueChange }: any) {
         </Tooltip>
       </TooltipProvider>
       <div className="flex flex-row gap-2 items-center justify-center">
-        <Button onClick={handleIncrement} variant={"outline"} type="button">
-          +
+        <Button onClick={handleDecrement} variant={"outline"} type="button">
+          -
         </Button>
         <Input
           value={sliderValue}
           className="md:w-[60px]"
           onChange={handleInput}
         />
-        <Button onClick={handleDecrement} variant={"outline"} type="button">
-          -
+
+        <Button onClick={handleIncrement} variant={"outline"} type="button">
+          +
         </Button>
       </div>
     </div>

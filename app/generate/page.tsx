@@ -1,9 +1,5 @@
-import ImageCarousel from "@/components/image-gen-components/ImageCarousel";
-import ImageGenForm from "@/components/image-gen-components/ImageGenForm";
-import AlertDialogComponent from "@/components/misc-components/AlertDialogComponent";
+import ImageGeneratorComponent from "@/components/image-gen-components/ImageGenForm";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { saveMetadata } from "../_api/saveImageToSupabase";
-import useImageMetadataStore from "@/stores/ImageMetadataStore";
 
 const page = async () => {
   const supabase = await createSupabaseServerClient();
@@ -22,12 +18,7 @@ const page = async () => {
         </h1>
       </div>
       <div className="w-full items-center flex flex-col justify-center">
-        <div className=" items-center my-8 w-full ">
-          <ImageGenForm user={user} />
-        </div>
-        <div className="md:my-8 p-4 ">
-          <ImageCarousel user={user} />
-        </div>
+        <ImageGeneratorComponent user={user} />
       </div>
     </div>
   );

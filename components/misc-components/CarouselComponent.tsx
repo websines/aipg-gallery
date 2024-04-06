@@ -15,7 +15,6 @@ import DownloadBtnComponent from "./DownloadBtn";
 import { Heart } from "lucide-react";
 
 const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
-  console.log(images);
   const [api, setApi] = useState<CarouselApi>();
   const [thumbsapi, setThumbsApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);

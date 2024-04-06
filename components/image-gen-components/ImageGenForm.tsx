@@ -40,11 +40,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+import ImageCarousel from "@/components/image-gen-components/ImageCarousel";
+
 import fetchAvailableModels from "@/app/_api/fetchModels";
 import { Model } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { transformFormData } from "@/utils/validationUtils";
-import useFormInputStore from "@/stores/InputStore";
 import { createImage } from "@/app/_api/createImage";
 import useJobIdStore from "@/stores/jobIDStore";
 import { User } from "@supabase/supabase-js";
@@ -110,7 +111,7 @@ type MetaData = {
   publicView: boolean;
 };
 
-const ImageGenForm = ({ user }: { user: User | null }) => {
+const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
   const [generateDisabled, setGenerateDisable] = useState(true);
   const [jobID, setJob] = useState("");
   const { toast } = useToast();
@@ -185,7 +186,6 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
         description: response.message,
       });
     }
-
     setJob(response.jobId!);
   };
 
@@ -197,13 +197,9 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
   setJobId(jobID);
 
   return (
-    <>
+    <div className="flex flex-col items-center justify-center w-full">
       <Card className="bg-transparent border-0">
-        {/* <CardHeader className="">
-          <CardTitle>Image Generator</CardTitle>
-          <CardDescription>Generate your favorite images</CardDescription>
-        </CardHeader> */}
-        <CardContent className="flex flex-col items-center justify-center ">
+        <CardContent className="flex flex-col items-center justify-center w-full">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit)}
@@ -688,8 +684,11 @@ const ImageGenForm = ({ user }: { user: User | null }) => {
           </Form>
         </CardContent>
       </Card>
-    </>
+      <div>
+        <ImageCarousel user={user} />
+      </div>
+    </div>
   );
 };
 
-export default ImageGenForm;
+export default ImageGeneratorComponent;

@@ -34,10 +34,14 @@ import { User } from "@supabase/supabase-js";
 import useImageMetadataStore from "@/stores/ImageMetadataStore";
 
 import { saveImageData, saveMetadata } from "@/app/_api/saveImageToSupabase";
+import { Info } from "lucide-react";
+import { useToast } from "../ui/use-toast";
 
 const ImageCarousel = ({ user }: { user: User | null }) => {
+  const toast = useToast();
   const jobID = useJobIdStore((state: any) => state.jobId);
   const metadata = useImageMetadataStore((state) => state.metadata);
+  const resetMetadata = useImageMetadataStore((state) => state.resetMetadata);
   const addImg = useImageMetadataStore((state) => state.addImage);
 
   const [finalImages, setImages] = useState<any>(null);
@@ -90,6 +94,7 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
       try {
         if (metadata?.positivePrompt != "") {
           const metadataId = await saveMetadata(metadata, userId);
+          resetMetadata();
           if (finalImages != null) {
             for (const image of finalImages.generations) {
               await saveImageData(image, metadataId);
@@ -105,9 +110,9 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
   }, [finalImages, addImg]);
 
   return (
-    <>
-      <Card className="w-full p-4 justify-start items-center h-[400px]">
-        <CardHeader className="mx-auto flex text-center">
+    <div className="w-full">
+      <Card className="w-[80vw] justify-start items-center border-0 p-2 rounded-lg bg-gray-800 border-1 border-zinc-950">
+        <CardHeader className="mx-auto flex flex-col md:flex-row items-center justify-between text-center gap-4">
           <CardTitle>AIPG IMAGE GENERATOR</CardTitle>
           <div className="flex flex-row justify-between p-2 m-2 items-center">
             <div className=" flex flex-row items-center gap-1">
@@ -123,10 +128,10 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
             </div>
             <Dialog>
               <DialogTrigger
-                className="hover:bg-gray-800 cursor-pointer p-2 rounded-lg"
+                className="hover:bg-gray-800 cursor-pointer p-2 rounded-full"
                 type="button"
               >
-                Stats
+                <Info className="w-6 h-6" />
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -143,24 +148,20 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
           </div>
         </CardHeader>
         <CardContent className="">
-          <Carousel className="w-full max-w-xs mx-auto">
+          <Carousel className="w-full mx-auto my-6 md:my-0 relative">
             <CarouselContent>
               {finalImages?.success! &&
                 finalImages?.generations.map(
                   (generatedImg: any, index: any) => (
                     <CarouselItem key={index}>
-                      <div className="p-1">
-                        <Card>
-                          <CardContent className=" p-6 bg-white">
-                            {generatedImg && (
-                              <img
-                                src={`data:image/jpg;base64,${generatedImg.base64String}`}
-                                className="max-w-full object-cover"
-                                alt="img"
-                              />
-                            )}
-                          </CardContent>
-                        </Card>
+                      <div className="p-1 mt-4">
+                        {generatedImg && (
+                          <img
+                            src={`data:image/jpg;base64,${generatedImg.base64String}`}
+                            className="max-w-full object-contain rounded-lg mx-auto"
+                            alt="img"
+                          />
+                        )}
                       </div>
                     </CarouselItem>
                   )
@@ -168,14 +169,14 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
             </CarouselContent>
             {finalImages?.success && (
               <div>
-                <CarouselPrevious />
-                <CarouselNext />
+                <CarouselPrevious className="absolute top-1/2 left-3" />
+                <CarouselNext className="absolute top-1/2 right-3" />
               </div>
             )}
           </Carousel>
         </CardContent>
 
-        {jobID && (
+        {jobID && imgStatus?.done === false && (
           <CardFooter className="flex flex-col my-4 gap-2">
             <div className="flex flex-row items-center justify-center gap-2">
               <p className="text-md font-semibold text-white">
@@ -191,13 +192,13 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
             </div>
           </CardFooter>
         )}
-        {finalImages?.success && (
+        {/* {finalImages?.success && (
           <div className="text-white p-4 text-center font-medium m-2">
             Your images are generated
           </div>
-        )}
+        )} */}
       </Card>
-    </>
+    </div>
   );
 };
 
