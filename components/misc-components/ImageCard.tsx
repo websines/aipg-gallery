@@ -9,6 +9,7 @@ import { fetchLikedStatus, likeorUnlikeImages } from "@/app/_api/likeImages";
 import { Button } from "../ui/button";
 import { deleteUserImages } from "@/app/_api/deleteImage";
 import CarouselComponent from "./CarouselComponent";
+import { LoadingSpinner } from "./LoadingSpinner";
 const ImageCard = ({ item, user }: any) => {
   const { data: isLiked, refetch } = useQuery({
     queryKey: ["imageLikeStatus", item.id, user], // Unique query key
@@ -23,7 +24,7 @@ const ImageCard = ({ item, user }: any) => {
     onError: (error) => console.error(error.message),
   });
 
-  const { mutate: deleteMutate } = useMutation({
+  const { mutate: deleteMutate, isPending } = useMutation({
     mutationKey: ["deleteImages", item.id, user],
     mutationFn: () => deleteUserImages(item.id),
   });
@@ -105,7 +106,7 @@ const ImageCard = ({ item, user }: any) => {
                   variant="destructive"
                   onClick={() => deleteMutate(item.id)}
                 >
-                  Delete
+                  Delete {isPending && <LoadingSpinner />}
                 </Button>
               )}
             </div>
