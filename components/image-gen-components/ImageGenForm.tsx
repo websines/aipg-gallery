@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,13 +32,7 @@ import {
 import ToolTipComponent from "./ToolTipComponent";
 import SliderWithCounter from "./SliderComponent";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 import ImageCarousel from "@/components/image-gen-components/ImageCarousel";
 
@@ -50,6 +44,7 @@ import { createImage } from "@/app/_api/createImage";
 import useJobIdStore from "@/stores/jobIDStore";
 import { User } from "@supabase/supabase-js";
 import useImageMetadataStore from "@/stores/ImageMetadataStore";
+import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -113,6 +108,7 @@ type MetaData = {
 
 const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
   const [generateDisabled, setGenerateDisable] = useState(true);
+  const [isPending, startTransition] = useTransition();
   const [jobID, setJob] = useState("");
   const { toast } = useToast();
 
@@ -167,7 +163,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
     (state) => state.initializeMetadata
   );
 
-  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
+  const handleSubmit = (data: z.infer<typeof formSchema>) => {
     setMetadata({
       positivePrompt: data.postivePrompt,
       negativePrompt: data.negativePrompt,
@@ -179,14 +175,16 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
 
     const transformedData = transformFormData(data);
 
-    const response = await createImage(transformedData);
+    startTransition(async () => {
+      const response = await createImage(transformedData);
 
-    if (response.message) {
-      toast({
-        description: response.message,
-      });
-    }
-    setJob(response.jobId!);
+      if (response.message) {
+        toast({
+          description: response.message,
+        });
+      }
+      setJob(response.jobId!);
+    });
   };
 
   useEffect(() => {
@@ -679,6 +677,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                 {generateDisabled
                   ? "Log In To Access Generator"
                   : "Generate image(s)"}
+                {isPending && <LoadingSpinner className="text-black" />}
               </Button>
             </form>
           </Form>

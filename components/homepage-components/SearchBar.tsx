@@ -25,10 +25,9 @@ const SearchBar = ({ value, onChange }: SearchProps) => {
 
   return (
     <div className="flex flex-col items-center justify-center space-y-4 w-full">
-      <div className="text-5xl font-medium text-center my-4">
-        AIPG Gallery
-        <br />
-        Logo Pending
+      <div className="flex flex-row gap-2 items-center">
+        <img src="/aipg_logo.png" alt="aipowergrid" className="w-40 h-40" />
+        <h1 className="text-5xl font-medium my-4">AIPG ArtGallery</h1>
       </div>
       <div className="relative w-80">
         <Search className="absolute top-0 bottom-0 w-6 h-6 my-auto text-gray-500 left-3" />

@@ -21,6 +21,7 @@ const LikesPage = ({ user }: { user: User | null }) => {
       return nextPage;
     },
     initialPageParam: 1,
+    enabled: user != null,
   });
 
   const photos = data?.pages.flatMap((page: any) => page);
@@ -44,8 +45,15 @@ const LikesPage = ({ user }: { user: User | null }) => {
   return (
     <>
       <div className="flex flex-col justify-center items-center my-8">
-        <div className="my-8 flex self-center text-3xl font-medium">Likes</div>
+        <div className="my-8 self-center text-5xl gap-2 flex flex-row items-center font-medium">
+          Likes
+        </div>
         <div className="my-4">
+          {!user && (
+            <p className="mx-auto text-lg font-medium text-white">
+              Log In Required
+            </p>
+          )}
           {isLoading ? (
             <LoadingSpinner />
           ) : photos && photos.length < 1 ? (

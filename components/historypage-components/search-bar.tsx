@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Aperture, Search } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   Tooltip,
@@ -26,10 +26,9 @@ const HistorySearch = ({ value, onChange }: SearchProps) => {
 
   return (
     <div className="flex flex-col items-center justify-center space-y-4 w-full">
-      <div className="text-5xl font-medium text-center my-4">
-        Your Camera Roll
-        <br />
-        Logo Pending
+      <div className="text-5xl font-medium text-center my-4 flex flex-row gap-2 items-center">
+        <Aperture className="w-16 h-16" />
+        Camera Roll
       </div>
       <div className="relative w-80">
         <Search className="absolute top-0 bottom-0 w-6 h-6 my-auto text-gray-500 left-3" />

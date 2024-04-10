@@ -24,6 +24,7 @@ const HistoryPage = ({ user }: { user: User | null }) => {
       return nextPage;
     },
     initialPageParam: 1,
+    enabled: user != null,
   });
 
   const photos = data?.pages.flatMap((page: any) => page);
@@ -52,6 +53,11 @@ const HistoryPage = ({ user }: { user: User | null }) => {
           onChange={(e) => setSearch(e.target.value)}
         />
         <div className="my-4">
+          {!user && (
+            <p className="mx-auto text-lg font-medium text-white">
+              Log In Required
+            </p>
+          )}
           {isLoading ? (
             <LoadingSpinner />
           ) : photos && photos.length < 1 ? (

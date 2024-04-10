@@ -111,7 +111,7 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
 
   return (
     <div className="w-full">
-      <Card className="w-[80vw] justify-start items-center border-0 p-2 rounded-lg bg-gray-800 border-1 border-zinc-950">
+      <Card className="w-[80vw] justify-start items-center border-0 p-2 rounded-lg bg-zinc-950 border-1 border-zinc-950">
         <CardHeader className="mx-auto flex flex-col md:flex-row items-center justify-between text-center gap-4">
           <CardTitle>AIPG IMAGE GENERATOR</CardTitle>
           <div className="flex flex-row justify-between p-2 m-2 items-center">

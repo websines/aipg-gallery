@@ -15,8 +15,16 @@ const Navbar = ({ user }: { user: User | null }) => {
   return (
     <>
       <header className="top-0 p-4 flex flex-row justify-between items-center">
-        <Link href="/" className="text-black dark:text-white font-semibold">
-          AIPG ART
+        <Link
+          href="/"
+          className="text-black dark:text-white font-medium flex flex-row gap-2 text-sm"
+        >
+          <img
+            src="/aipg_logo_small.png"
+            alt="aipowergrid"
+            className="w-6 h-6"
+          />
+          AI PowerGrid
         </Link>
         <NavigationMenu className="md:block hidden">
           <NavigationMenuList>
