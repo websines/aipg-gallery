@@ -45,6 +45,12 @@ import useJobIdStore from "@/stores/jobIDStore";
 import { User } from "@supabase/supabase-js";
 import useImageMetadataStore from "@/stores/ImageMetadataStore";
 import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -127,7 +133,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
       postivePrompt: "",
       negativePrompt: "",
       seed: "",
-      sampler: "",
+      sampler: "k_lms",
       batchSize: 1,
       steps: 15,
       width: 512,
@@ -289,6 +295,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                 field.onChange(value[0] || value);
                               }}
                               step={1}
+                              defaultValue={1}
                             />
                           </FormControl>
                           <FormMessage />
@@ -314,6 +321,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                 field.onChange(value[0] || value);
                               }}
                               step={1}
+                              defaultValue={7}
                             />
                           </FormControl>
                           <FormMessage />
@@ -334,11 +342,12 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                           <FormControl>
                             <SliderWithCounter
                               min={64}
-                              max={1024}
+                              max={1536}
                               onValueChange={(value: any) => {
                                 field.onChange(value[0] || value);
                               }}
                               step={64}
+                              defaultValue={512}
                             />
                           </FormControl>
                           <FormMessage />
@@ -359,11 +368,12 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                           <FormControl>
                             <SliderWithCounter
                               min={64}
-                              max={1024}
+                              max={1536}
                               onValueChange={(value: any) => {
                                 field.onChange(value[0] || value);
                               }}
                               step={64}
+                              defaultValue={512}
                             />
                           </FormControl>
                           <FormMessage />
@@ -389,6 +399,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                 field.onChange(value[0] || value);
                               }}
                               step={0.5}
+                              defaultValue={7}
                             />
                           </FormControl>
                           <FormMessage />
@@ -414,6 +425,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                 field.onChange(value[0] || value);
                               }}
                               step={1}
+                              defaultValue={1}
                             />
                           </FormControl>
                           <FormMessage />
@@ -522,7 +534,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                         );
                       }}
                     />
-                    <FormField
+                    {/* <FormField
                       control={form.control}
                       name="postprocessors"
                       render={({ field }) => {
@@ -551,7 +563,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                           </FormItem>
                         );
                       }}
-                    />
+                    /> */}
                   </fieldset>
 
                   <fieldset className="grid gap-6 rounded-lg border p-4">

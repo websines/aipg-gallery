@@ -10,8 +10,14 @@ import {
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
-function SliderWithCounter({ min, max, step = 1, onValueChange }: any) {
-  const [sliderValue, setSliderValue] = useState(min);
+function SliderWithCounter({
+  min,
+  max,
+  step = 1,
+  defaultValue,
+  onValueChange,
+}: any) {
+  const [sliderValue, setSliderValue] = useState(defaultValue);
 
   const handleChange = (newValue: any) => {
     setSliderValue(newValue);
@@ -43,7 +49,7 @@ function SliderWithCounter({ min, max, step = 1, onValueChange }: any) {
           <TooltipTrigger type="button">
             <Slider
               value={[sliderValue]}
-              defaultValue={[min]}
+              defaultValue={[defaultValue]}
               max={max}
               step={step}
               onValueChange={handleChange}
