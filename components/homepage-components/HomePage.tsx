@@ -8,6 +8,8 @@ import { fetchPublicImages } from "@/app/_api/fetchPublicImages";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 import ImageCard from "@/components/misc-components/ImageCard";
+import StaticImageCard from "../misc-components/StaticImageCard";
+import { staticImagesSet } from "@/lib/helper";
 
 const Homepage = ({ user }: { user: User | null }) => {
   const sentinelRef = useRef(null);
@@ -53,7 +55,7 @@ const Homepage = ({ user }: { user: User | null }) => {
             <LoadingSpinner />
           ) : photos && photos.length < 1 ? (
             <p className="mx-auto text-lg font-medium text-white">
-              No images found
+              Generate more images!
             </p>
           ) : (
             <div className="columns-2 md:columns-4 xl:columns-5 p-2 gap-2 space-y-2">
@@ -67,6 +69,9 @@ const Homepage = ({ user }: { user: User | null }) => {
                 >
                   <ImageCard item={photo} user={user?.id} />
                 </motion.div>
+              ))}
+              {staticImagesSet.map((imageSet, idx) => (
+                <StaticImageCard key={`static-${idx}`} images={imageSet} />
               ))}
             </div>
           )}
