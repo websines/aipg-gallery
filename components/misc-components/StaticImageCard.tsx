@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import StaticImagesCarousel from "./StaticImagesCarousel";
+import Image from "next/image";
 
 const StaticImageCard = ({ images }: { images: any[] }) => {
   if (images.length === 0) return null;
@@ -12,12 +13,13 @@ const StaticImageCard = ({ images }: { images: any[] }) => {
       <Dialog>
         <DialogTrigger asChild>
           <div className="cursor-pointer relative rounded-sm overflow-hidden group">
-            <motion.img
+            <Image
               src={images[0].image_url}
               className="w-auto h-auto object-cover rounded-sm"
               alt={images[0].seed}
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 200 }}
+              // whileHover={{ scale: 1.02 }}
+              // transition={{ type: "spring", stiffness: 200 }}
+              loading="lazy"
             />{" "}
           </div>
         </DialogTrigger>
