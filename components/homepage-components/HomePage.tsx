@@ -8,8 +8,7 @@ import { fetchPublicImages } from "@/app/_api/fetchPublicImages";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 import ImageCard from "@/components/misc-components/ImageCard";
-import StaticImageCard from "../misc-components/StaticImageCard";
-import { staticImagesSet } from "@/lib/helper";
+// import { staticImagesSet } from "@/lib/helper";
 
 const Homepage = ({ user }: { user: User | null }) => {
   const sentinelRef = useRef(null);
@@ -69,9 +68,6 @@ const Homepage = ({ user }: { user: User | null }) => {
                 >
                   <ImageCard item={photo} user={user?.id} />
                 </motion.div>
-              ))}
-              {staticImagesSet.map((imageSet, idx) => (
-                <StaticImageCard key={`static-${idx}`} images={imageSet} />
               ))}
             </div>
           )}
