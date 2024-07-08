@@ -17,6 +17,7 @@ const StaticImageCard = ({ images }: { images: any[] }) => {
               src={images[0].image_url}
               className="w-auto h-auto object-cover rounded-sm"
               alt={images[0].seed}
+              fill
               // whileHover={{ scale: 1.02 }}
               // transition={{ type: "spring", stiffness: 200 }}
               loading="lazy"
