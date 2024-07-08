@@ -25,7 +25,7 @@ export function UserNav({ user }: { user: UserType | null }) {
           {user ? (
             <Button variant="ghost" className="h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8 p-1">
-                <User2Icon className="w-6 h-6" />
+                <User2Icon className="w-6 h-6 z-50" />
               </Avatar>
             </Button>
           ) : (

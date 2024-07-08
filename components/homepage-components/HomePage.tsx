@@ -47,7 +47,9 @@ const Homepage = ({ user }: { user: User | null }) => {
   }, [hasNextPage, fetchNextPage]);
   return (
     <>
-      <div className="flex flex-col justify-center items-center my-8">
+      {/* Radial gradient for the container to give a faded look */}
+      <div className="flex flex-col justify-center items-center my-8 bg-grid-small-white/[0.2]">
+        <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
         <SearchBar value={search} onChange={(e) => setSearch(e.target.value)} />
         <div className="my-4 mx-auto">
           {isLoading ? (
