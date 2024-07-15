@@ -13,6 +13,7 @@ import { AuthForm } from "@/components/auth-components/AuthForm";
 import { useState, useCallback, useEffect } from "react";
 import DownloadBtnComponent from "./DownloadBtn";
 import { Heart } from "lucide-react";
+import Image from "next/image";
 
 const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
   const [api, setApi] = useState<CarouselApi>();
@@ -48,8 +49,29 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
     api.on("reInit", onSelect);
   }, [api]);
 
+  const imageKitLoader = ({ src, width, quality }: any) => {
+    // Extract the image filename from the full URL
+    const imageFilename = src.split("/").pop();
+
+    // Define the transformation parameters
+    const params = [`w-${width}`];
+    if (quality) {
+      params.push(`q-${quality}`);
+    }
+    const paramsString = params.join(",");
+
+    // Construct the ImageKit URL
+    let urlEndpoint = "https://ik.imagekit.io/tkafllsgm";
+    if (urlEndpoint[urlEndpoint.length - 1] === "/") {
+      urlEndpoint = urlEndpoint.substring(0, urlEndpoint.length - 1);
+    }
+
+    // console.log(`${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`);
+    return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-png`;
+  };
+
   return (
-    <div className="flex flex-col gap-2 ">
+    <div className="flex flex-col gap-2 max-w-[60%] ">
       <Carousel
         className="w-full mx-auto my-6 md:my-0 relative"
         setApi={setApi}
@@ -58,10 +80,16 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
           {images.map((image: any) => (
             <CarouselItem key={image.id}>
               <div className="p-0 bg-white relative">
-                <img
+                <Image
+                  loader={imageKitLoader}
+                  height={400}
+                  width={400}
+                  loading="lazy"
                   src={image.image_url}
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto object-cover"
                   alt={image.seed}
+                  quality={100}
+                  sizes="100vw"
                 />
                 <DownloadBtnComponent photo={image} />
               </div>
@@ -103,10 +131,14 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
               key={index}
               onClick={() => onThumbClick(index)}
             >
-              <img
+              <Image
+                loader={imageKitLoader}
                 src={image.image_url}
+                height={75}
+                width={75}
                 className="w-[75px] h-[75px] object-cover rounded-lg"
                 alt={image.seed}
+                priority={true}
               />
             </div>
           ))}

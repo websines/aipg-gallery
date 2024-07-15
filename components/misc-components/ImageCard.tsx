@@ -10,6 +10,7 @@ import { Button } from "../ui/button";
 import { deleteUserImages } from "@/app/_api/deleteImage";
 import CarouselComponent from "./CarouselComponent";
 import { LoadingSpinner } from "./LoadingSpinner";
+import Image from "next/image";
 const ImageCard = ({ item, user }: any) => {
   const { data: isLiked, refetch } = useQuery({
     queryKey: ["imageLikeStatus", item.id, user], // Unique query key
@@ -34,18 +35,42 @@ const ImageCard = ({ item, user }: any) => {
       likeMutate(userID, itemID);
     }
   };
+
+  const imageKitLoader = ({ src, width, quality }: any) => {
+    // Extract the image filename from the full URL
+    const imageFilename = src.split("/").pop();
+
+    // Define the transformation parameters
+    const params = [`w-${width}`];
+    if (quality) {
+      params.push(`q-${quality}`);
+    }
+    const paramsString = params.join(",");
+
+    // Construct the ImageKit URL
+    let urlEndpoint = "https://ik.imagekit.io/tkafllsgm";
+    if (urlEndpoint[urlEndpoint.length - 1] === "/") {
+      urlEndpoint = urlEndpoint.substring(0, urlEndpoint.length - 1);
+    }
+
+    // console.log(`${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`);
+    return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`;
+  };
   return (
-    <div>
+    <div className="z-50">
       <Dialog key={item.id}>
         <DialogTrigger asChild>
-          <div className="cursor-pointer relative rounded-sm overflow-hidden group">
-            <motion.img
-              // src={`data:image/jpg;base64,${item.image_data[0].base64_string}`}
+          <div className="cursor-pointer relative rounded-sm overflow-hidden group bg-white">
+            <Image
+              loader={imageKitLoader}
               src={item.image_data[0].image_url}
-              className="max-w-full object-cover rounded-sm"
+              height={400}
+              width={400}
+              loading="lazy"
+              className="max-w-full h-auto object-cover rounded-sm scale-105 transition ease-in-out duration-200"
               alt={item.positive_prompt}
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 200 }}
+              quality={60}
+              sizes="100vw"
             />
             {user && (
               <button
@@ -68,7 +93,8 @@ const ImageCard = ({ item, user }: any) => {
         </DialogTrigger>
         <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-transaprent max-h-[80vh] md:max-h-[95vh] no-scrollbar backdrop-blur-md">
           <div className="p-4 flex flex-col-reverse md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg">
-            <div className="flex flex-col items-start h-full justify-start gap-2 text-white md:w-[80%]">
+            {/* <div className="p-4 grid grid-flow-row md:grid-flow-col bg-transparent items-center justify-center gap-4 relative backdrop-blur-lg"> */}
+            <div className="flex flex-col items-start h-full justify-start gap-2 text-white md:w-[80%] ">
               <div className="p-4 my-4 bg-opacity-40 bg-gray-800/50 rounded-lg flex flex-col items-start justify-start w-full">
                 <p className="text-sm text-gray-300">Positive Prompt</p>
                 <p className="text-md font-medium">{item.positive_prompt}</p>

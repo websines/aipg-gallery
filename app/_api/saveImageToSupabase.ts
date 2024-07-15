@@ -38,7 +38,6 @@ export async function uploadImage(file: any, metadataId: any) {
     return null;
   } else {
     const {data} = supabase.storage.from('generated_images').getPublicUrl(fileName);
-    console.log(data.publicUrl)
     return data?.publicUrl;
     
   }
@@ -46,7 +45,6 @@ export async function uploadImage(file: any, metadataId: any) {
 
 export async function saveImageData(image: any, metadataId: any) {
   const imageBlob = await base64toBlob(image.base64String);
-  console.log(imageBlob) 
    const imageUrl = await uploadImage(imageBlob, metadataId);
   const { data, error } = await supabase
     .from('image_data')

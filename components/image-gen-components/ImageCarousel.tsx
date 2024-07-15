@@ -122,8 +122,7 @@ const ImageCarousel = ({ user }: { user: User | null }) => {
                 } rounded-full`}
               />
               <div className="text-md font-medium">
-                {performance?.worker_count} Worker(s){" "}
-                {performance?.worker_count > 0 ? "online" : "offline"}
+                {performance?.worker_count} Worker(s) online
               </div>
             </div>
             <Dialog>
