@@ -67,9 +67,9 @@ const ImageCard = ({ item, user }: any) => {
               height={400}
               width={400}
               loading="lazy"
-              className="max-w-full h-auto object-cover rounded-sm scale-105 transition ease-in-out duration-200"
+              className="max-w-full h-auto object-cover rounded-sm hover:scale-105 transition ease-in-out duration-200"
               alt={item.positive_prompt}
-              quality={60}
+              quality={40}
               sizes="100vw"
             />
             {user && (

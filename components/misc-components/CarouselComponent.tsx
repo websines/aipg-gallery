@@ -67,7 +67,7 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
     }
 
     // console.log(`${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`);
-    return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-png`;
+    return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-jpg`;
   };
 
   return (
@@ -88,7 +88,7 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
                   src={image.image_url}
                   className="w-full h-auto object-cover"
                   alt={image.seed}
-                  quality={100}
+                  quality={80}
                   sizes="100vw"
                 />
                 <DownloadBtnComponent photo={image} />
