@@ -1,5 +1,6 @@
 import { defaultApiKey, ClientHeader, BASE_API_URL } from "@/constants"
 import { CreateImageResponse, IApiParams, GenerateResponse } from "@/types"
+import { fetchApikey } from "./fetchApiKey"
 
 
 
@@ -8,7 +9,7 @@ let isPending = false
 export const createImage = async (
   imageDetails: any
 ): Promise<CreateImageResponse> => {
-  const apikey = defaultApiKey
+  const apikey = defaultApiKey 
 
   if (!apikey) {
     return {
