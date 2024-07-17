@@ -64,13 +64,13 @@ const ImageCard = ({ item, user }: any) => {
             <Image
               loader={imageKitLoader}
               src={item.image_data[0].image_url}
-              height={400}
-              width={400}
+              height={0}
+              width={0}
               loading="lazy"
-              className="max-w-full h-auto object-cover rounded-sm hover:scale-105 transition ease-in-out duration-200"
+              className="w-full h-auto object-cover rounded-sm hover:scale-105 transition ease-in-out duration-200"
               alt={item.positive_prompt}
               quality={40}
-              sizes="100vw"
+              layout="responsive"
             />
             {user && (
               <button
