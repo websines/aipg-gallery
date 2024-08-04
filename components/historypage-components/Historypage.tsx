@@ -47,7 +47,7 @@ const HistoryPage = ({ user }: { user: User | null }) => {
   }, [hasNextPage, fetchNextPage]);
   return (
     <>
-      <div className="flex flex-col justify-center items-center my-8 bg-grid-white/[0.2]">
+      <div className="flex flex-col justify-center items-center my-8">
         {/* <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div> */}
         <HistorySearch
           value={search}

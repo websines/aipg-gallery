@@ -63,7 +63,7 @@ const ImageCard = ({ item, user }: any) => {
           <div className="cursor-pointer relative rounded-sm overflow-hidden group bg-white">
             <Image
               loader={imageKitLoader}
-              src={item.image_data[0].image_url}
+              src={item.image_data[0].image_url!}
               height={0}
               width={0}
               loading="lazy"

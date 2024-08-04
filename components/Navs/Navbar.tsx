@@ -20,11 +20,10 @@ const Navbar = ({ user }: { user: User | null }) => {
           className="text-black dark:text-white font-medium flex flex-row gap-2 text-sm z-50"
         >
           <img
-            src="/aipg_logo_small.png"
+            src="/aipgweblogo.webp"
             alt="aipowergrid"
-            className="w-6 h-6"
+            className="w-auto h-8"
           />
-          AI PowerGrid
         </Link>
         <NavigationMenu className="md:block hidden">
           <NavigationMenuList>

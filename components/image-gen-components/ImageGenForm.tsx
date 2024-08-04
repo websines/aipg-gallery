@@ -201,7 +201,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
   setJobId(jobID);
 
   return (
-    <div className="flex flex-col items-center justify-center w-full bg-grid-white/[0.2]">
+    <div className="flex flex-col items-center justify-center w-full">
       <Card className="bg-transparent border-0">
         <CardContent className="flex flex-col items-center justify-center w-full">
           <Form {...form}>
