@@ -56,6 +56,8 @@ const ImageCard = ({ item, user }: any) => {
     // console.log(`${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`);
     return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`;
   };
+
+  console.log(item.image_data[0]?.image_url);
   return (
     <div className="z-50">
       <Dialog key={item.id}>
@@ -63,7 +65,7 @@ const ImageCard = ({ item, user }: any) => {
           <div className="cursor-pointer relative rounded-sm overflow-hidden group bg-white">
             <Image
               loader={imageKitLoader}
-              src={item.image_data[0].image_url!}
+              src={item.image_data[0]?.image_url}
               height={0}
               width={0}
               loading="lazy"
@@ -115,7 +117,7 @@ const ImageCard = ({ item, user }: any) => {
                 <div className="flex flex-col justify-start items-start gap-1">
                   <p className="text-sm text-gray-300">Seed</p>
                   <p className="text-sm font-medium">
-                    {item.image_data[0].seed}
+                    {item.image_data[0]?.seed}
                   </p>
                 </div>
               </div>
