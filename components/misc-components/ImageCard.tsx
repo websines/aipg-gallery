@@ -57,7 +57,6 @@ const ImageCard = ({ item, user }: any) => {
     return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`;
   };
 
-  console.log(item.image_data[0]?.image_url);
   return (
     <div className="z-50">
       <Dialog key={item.id}>
