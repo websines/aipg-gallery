@@ -52,8 +52,6 @@ const ImageCard = ({ item, user }: any) => {
     if (urlEndpoint[urlEndpoint.length - 1] === "/") {
       urlEndpoint = urlEndpoint.substring(0, urlEndpoint.length - 1);
     }
-
-    // console.log(`${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`);
     return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`;
   };
 
