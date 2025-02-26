@@ -83,7 +83,40 @@ const ActiveJobsPanel: React.FC<ActiveJobsPanelProps> = ({ onJobComplete }) => {
     }
     
     setCheckingJob(jobId);
+    
     try {
+      // Check if this is a completed job
+      const isCompleted = completedJobs.some(job => job.job_id === jobId);
+      
+      // If it's a completed job, fetch the images directly
+      if (isCompleted) {
+        const result = await getFinishedImage(jobId);
+        
+        if (result.success && result.images) {
+          // If we have a callback, use it
+          if (onJobComplete) {
+            onJobComplete(result.images);
+          }
+          
+          // Display success toast
+          toast({
+            title: "Success",
+            description: "Images loaded successfully!",
+          });
+          
+          // Navigate to the images in the UI
+          // This should be handled by the parent component via onJobComplete
+        } else {
+          toast({
+            title: "Error",
+            description: result.error || "Failed to load images. Please try again.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+      
+      // For active jobs, continue with the existing logic
       const result = await getFinishedImage(jobId, userData.id);
       
       if (result.success && 'generations' in result) {

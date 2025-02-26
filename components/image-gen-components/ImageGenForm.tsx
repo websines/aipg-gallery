@@ -352,6 +352,13 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
     if (!user || images.length === 0) return;
     
     try {
+      // Check if these images have already been saved
+      // We'll use the first image's seed as a reference
+      if (images[0].saved) {
+        console.log("Images already saved, skipping");
+        return;
+      }
+      
       // First save metadata
       const metadataResult = await saveMetadata({
         positive_prompt: formData.positivePrompt,
@@ -373,6 +380,9 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
       const savePromises = images.map(async (image) => {
         const imageUrl = image.img_url || image.base64String;
         if (!imageUrl) return null;
+        
+        // Mark the image as saved to prevent duplicate saving
+        image.saved = true;
         
         return saveImageData({
           image_url: imageUrl,

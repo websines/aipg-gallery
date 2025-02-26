@@ -193,11 +193,19 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded }: ImageCarouselProps) =>
                     <Card className="overflow-hidden border-zinc-800 bg-zinc-900/60">
                       <CardContent className="p-0 aspect-square relative">
                         {image.img_url ? (
-                          <img 
-                            src={image.img_url} 
-                            alt={`Generated image ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
+                          image.img_url.includes('r2.cloudflarestorage.com') ? (
+                            <img 
+                              src={image.img_url} 
+                              alt={`Generated image ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <img 
+                              src={image.img_url} 
+                              alt={`Generated image ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          )
                         ) : image.base64String ? (
                           <img 
                             src={image.base64String} 

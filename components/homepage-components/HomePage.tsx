@@ -8,12 +8,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Download, Heart, ImageIcon } from "lucide-react";
 import SearchBar from "./SearchBar";
+import ImageDetailModal from "./ImageDetailModal";
 
 export default function HomePage() {
   const [value, setValue] = useState("");
+  const [selectedImage, setSelectedImage] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery({
     queryKey: ["images", value],
     queryFn: ({ pageParam = 1 }) => fetchPublicImages(pageParam as number, value),
+    initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage || lastPage.length === 0) return undefined; // Halt if the last page was empty or undefined
       const nextPage = allPages.length + 1;
@@ -24,6 +29,15 @@ export default function HomePage() {
   const flattenedData = useMemo(() => {
     return data?.pages.flatMap((page) => page) || [];
   }, [data]);
+  
+  const handleImageClick = (image: any) => {
+    setSelectedImage(image);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -56,21 +70,43 @@ export default function HomePage() {
                   {flattenedData.map((image) => (
                     <div
                       key={image.id}
-                      className="group relative overflow-hidden rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 shadow-md hover:shadow-xl"
+                      className="group relative overflow-hidden rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 shadow-md hover:shadow-xl cursor-pointer"
+                      onClick={() => handleImageClick(image)}
                     >
                       <div className="aspect-square overflow-hidden">
-                        <Image
-                          src={image.image_url}
-                          alt={image.prompt || "AI generated image"}
-                          width={500}
-                          height={500}
-                          className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-                        />
+                        {image.image_data && image.image_data.length > 0 ? (
+                          image.image_data[0].image_url.includes('r2.cloudflarestorage.com') ? (
+                            // Use regular img tag for Cloudflare R2 URLs
+                            <img
+                              src={image.image_data[0].image_url}
+                              alt={image.positive_prompt || "AI generated image"}
+                              className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            // Use Next.js Image component for other URLs
+                            <Image
+                              src={image.image_data[0].image_url}
+                              alt={image.positive_prompt || "AI generated image"}
+                              width={500}
+                              height={500}
+                              className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                            />
+                          )
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                            <p className="text-zinc-500">Image not available</p>
+                          </div>
+                        )}
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                         <p className="text-white text-sm line-clamp-3 mb-2">
-                          {image.prompt}
+                          {image.positive_prompt}
                         </p>
+                        {image.image_data && image.image_data.length > 1 && (
+                          <div className="bg-black/50 text-white text-xs px-2 py-1 rounded absolute top-2 right-2">
+                            +{image.image_data.length - 1} more
+                          </div>
+                        )}
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-zinc-400">
                             {new Date(image.created_at).toLocaleDateString()}
@@ -125,6 +161,13 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      
+      {/* Image Detail Modal */}
+      <ImageDetailModal 
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        image={selectedImage}
+      />
     </div>
   );
 }
