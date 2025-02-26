@@ -67,19 +67,19 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded }: ImageCarouselProps) =>
     try {
       const result = await getFinishedImage(jobId, userId);
       
-      if (result.success && 'generations' in result) {
+      if (result.success && result.images) {
         // We have our images
-        setGeneratedImages(result.generations);
+        setGeneratedImages(result.images);
         setIsComplete(true);
         
         // Notify parent component if callback provided
         if (onImagesLoaded) {
-          onImagesLoaded(result.generations);
+          onImagesLoaded(result.images);
         }
         
         // Save images if user is logged in
         if (userId && metadata) {
-          await saveImagesToDatabase(result.generations);
+          await saveImagesToDatabase(result.images);
         }
       } else {
         // If still processing, continue polling

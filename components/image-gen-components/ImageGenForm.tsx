@@ -56,6 +56,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
+import { saveImageData, saveMetadata } from "@/app/_api/saveImageToSupabase";
+import { Eye, Save } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -63,26 +66,42 @@ const optionSchema = z.object({
   disable: z.boolean().optional(),
 });
 
+// Form schema for validation
 const formSchema = z.object({
   postivePrompt: z.string().min(1, {
-    message: "Prompt cannot be empty",
+    message: "Please enter a prompt.",
   }),
-  negativePrompt: z.string(),
-  seed: z.string(),
+  negativePrompt: z.string().optional(),
+  seed: z.string().optional(),
   sampler: z.string(),
-  batchSize: z.number(),
-  steps: z.number(),
-  width: z.number(),
-  height: z.number(),
-  guidance: z.number(),
-  clipskip: z.number(),
-  model: z.string(),
-  postprocessors: z.array(optionSchema).optional(),
-  karras: z.boolean().optional(),
-  hires_fix: z.boolean().optional(),
-  tiling: z.boolean().optional(),
-  nsfw: z.boolean().optional(),
-  publicView: z.boolean(),
+  batchSize: z.number().min(1).max(4),
+  steps: z.number().min(10).max(50),
+  width: z.number().min(64).max(1024),
+  height: z.number().min(64).max(1024),
+  guidance: z.number().min(1).max(20),
+  clipskip: z.number().min(1).max(12),
+  model: z.string().min(1, {
+    message: "Please select a model.",
+  }),
+  karras: z.boolean().default(false),
+  nsfw: z.boolean().default(false),
+  hires_fix: z.boolean().default(false),
+  tiling: z.boolean().default(false),
+  publicView: z.boolean().default(false),
+  // New options from Stable Horde UI
+  post_processors: z.array(z.string()).default([]),
+  restore_faces: z.boolean().default(false),
+  xysType: z.boolean().default(false),
+  createVideo: z.boolean().default(false),
+  // Multi options
+  multiSelect: z.boolean().default(false),
+  multiModel: z.boolean().default(false),
+  multiSampler: z.boolean().default(false),
+  multiClipSkip: z.boolean().default(false),
+  multiSteps: z.boolean().default(false),
+  multiHiresFix: z.boolean().default(false),
+  multiKarras: z.boolean().default(false),
+  multiControlType: z.boolean().default(false),
 });
 
 const samplerListLite = [
@@ -156,6 +175,18 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
       hires_fix: false,
       tiling: false,
       publicView: false,
+      post_processors: [],
+      restore_faces: false,
+      xysType: false,
+      createVideo: false,
+      multiSelect: false,
+      multiModel: false,
+      multiSampler: false,
+      multiClipSkip: false,
+      multiSteps: false,
+      multiHiresFix: false,
+      multiKarras: false,
+      multiControlType: false,
     },
   });
 
@@ -199,6 +230,18 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
       hires_fix: false,
       tiling: false,
       publicView: false,
+      post_processors: [],
+      restore_faces: false,
+      xysType: false,
+      createVideo: false,
+      multiSelect: false,
+      multiModel: false,
+      multiSampler: false,
+      multiClipSkip: false,
+      multiSteps: false,
+      multiHiresFix: false,
+      multiKarras: false,
+      multiControlType: false,
     });
   };
 
@@ -233,6 +276,18 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
         model: data.model,
         guidance_scale: data.guidance,
         num_images: 2,
+        post_processors: data.post_processors,
+        restore_faces: data.restore_faces,
+        xysType: data.xysType,
+        createVideo: data.createVideo,
+        multiSelect: data.multiSelect,
+        multiModel: data.multiModel,
+        multiSampler: data.multiSampler,
+        multiClipSkip: data.multiClipSkip,
+        multiSteps: data.multiSteps,
+        multiHiresFix: data.multiHiresFix,
+        multiKarras: data.multiKarras,
+        multiControlType: data.multiControlType,
       };
 
       console.log("Submitting image generation request:", transformedData);
@@ -251,7 +306,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
         });
         
         // Start polling for the job status
-        startPollingJobStatus(response.jobId, user.id);
+        startPollingJobStatus(response.jobId);
       } else {
         console.error("Failed to create image generation job:", response.error);
         toast({
@@ -273,81 +328,121 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
   };
 
   // Handle completed jobs from the ActiveJobsPanel
-  const handleJobCompleted = (jobId: string, images: GeneratedImage[]) => {
+  const handleJobCompleted = (jobId: string, images: GeneratedImage[] | undefined) => {
     console.log(`Job ${jobId} completed with images:`, images);
-    setGeneratedImages(prev => [...images, ...prev]);
+    
+    // Make sure images is an array before spreading it
+    if (Array.isArray(images) && images.length > 0) {
+      setGeneratedImages(prev => [...images, ...prev]);
+      
+      // Save images to database if user is logged in
+      if (user && form.getValues()) {
+        const formData = form.getValues();
+        saveImagesToDatabase(images, formData);
+      }
+    } else {
+      console.warn(`Job ${jobId} completed but no valid images were returned`);
+    }
+    
     setGenerateDisable(false);
   };
 
+  // Save images to database
+  const saveImagesToDatabase = async (images: GeneratedImage[], formData: any) => {
+    if (!user || images.length === 0) return;
+    
+    try {
+      // First save metadata
+      const metadataResult = await saveMetadata({
+        positive_prompt: formData.positivePrompt,
+        negative_prompt: formData.negativePrompt || "",
+        sampler: formData.sampler,
+        model: formData.model,
+        guidance: formData.guidance,
+        public_view: formData.publicView,
+        user_id: user.id,
+      });
+      
+      if (!metadataResult.success) {
+        throw new Error("Failed to save metadata");
+      }
+      
+      const metadataId = metadataResult.id;
+      
+      // Then save each image
+      const savePromises = images.map(async (image) => {
+        const imageUrl = image.img_url || image.base64String;
+        if (!imageUrl) return null;
+        
+        return saveImageData({
+          image_url: imageUrl,
+          seed: image.seed?.toString() || "",
+          metadata_id: metadataId,
+        });
+      });
+      
+      const results = await Promise.all(savePromises);
+      const failedSaves = results.filter(r => !r || !r.success).length;
+      
+      if (failedSaves > 0) {
+        toast({
+          title: "Warning",
+          description: `${failedSaves} images failed to save to your gallery.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Images saved to your gallery!",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving images:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save images to your gallery.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Start polling for job status
-  const startPollingJobStatus = async (jobId: string, userId: string) => {
-    console.log(`Starting to poll for job status: ${jobId}`);
-    let attempts = 0;
-    const maxAttempts = 60; // 5 minutes (5s interval)
+  const startPollingJobStatus = async (jobId: string) => {
+    console.log(`Starting to poll job status for ${jobId}`);
     
     const pollInterval = setInterval(async () => {
-      attempts++;
-      
       try {
-        // Check job status
-        const response = await fetch(`/api/jobs/${jobId}/status?userId=${userId}`);
+        const response = await fetch(`/api/jobs/${jobId}/status`);
         const data = await response.json();
         
-        console.log(`Job ${jobId} status (attempt ${attempts}):`, data);
+        console.log(`Poll result for ${jobId}:`, data);
         
-        if (data.status === 'completed' && data.result?.generations) {
-          // Job completed successfully
+        if (data.status === 'completed') {
           clearInterval(pollInterval);
           
-          // Process the generated images
-          const images = data.result.generations.map((gen: any) => ({
-            id: gen.id,
-            seed: gen.seed,
-            img_url: gen.img_url
-          }));
-          
-          handleJobCompleted(jobId, images);
-          
-          toast({
-            title: "Image Generation Complete",
-            description: "Your images have been generated successfully!",
-          });
-        } else if (data.status === 'failed') {
-          // Job failed
+          // Handle the completed job with images
+          if (data.success && data.images && Array.isArray(data.images)) {
+            handleJobCompleted(jobId, data.images);
+          } else {
+            console.error(`Job ${jobId} completed but no valid images were returned`);
+            setGenerateDisable(false);
+          }
+        } else if (data.status === 'failed' || data.status === 'cancelled') {
           clearInterval(pollInterval);
+          console.error(`Job ${jobId} ${data.status}: ${data.message || 'No error message'}`);
           setGenerateDisable(false);
-          
-          toast({
-            title: "Image Generation Failed",
-            description: "Failed to generate images. Please try again.",
-            variant: "destructive",
-          });
-        } else if (attempts >= maxAttempts) {
-          // Timeout
-          clearInterval(pollInterval);
-          setGenerateDisable(false);
-          
-          toast({
-            title: "Timeout",
-            description: "Image generation is taking longer than expected. Check back later.",
-            variant: "destructive",
-          });
         }
+        // Continue polling for processing jobs
       } catch (error) {
-        console.error(`Error polling job status for ${jobId}:`, error);
-        
-        if (attempts >= maxAttempts) {
-          clearInterval(pollInterval);
-          setGenerateDisable(false);
-          
-          toast({
-            title: "Error",
-            description: "Failed to check image generation status. Please try again.",
-            variant: "destructive",
-          });
-        }
+        console.error(`Error polling job ${jobId}:`, error);
       }
-    }, 5000); // Check every 5 seconds
+    }, 5000); // Poll every 5 seconds
+    
+    // Store the interval ID so we can clear it if needed
+    // setPollingIntervals(prev => ({
+    //   ...prev,
+    //   [jobId]: pollInterval
+    // }));
   };
 
   return (
@@ -749,6 +844,69 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                             
                             <FormField
                               control={form.control}
+                              name="tiling"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Tiling</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Generate seamless tileable images
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="nsfw"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">NSFW</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Allow NSFW content generation
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="restore_faces"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Restore Faces</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Enhance facial features in generated images
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
                               name="publicView"
                               render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
@@ -762,6 +920,175 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <Switch
                                       checked={field.value}
                                       onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem value="postprocessors" className="border-zinc-800">
+                        <AccordionTrigger className="text-zinc-300 hover:text-white">Post-processors</AccordionTrigger>
+                        <AccordionContent>
+                          <FormField
+                            control={form.control}
+                            name="post_processors"
+                            render={({ field }) => (
+                              <FormItem className="mt-2">
+                                <FormLabel className="text-zinc-300">Post-processors</FormLabel>
+                                <Select
+                                  onValueChange={(value) => field.onChange([...field.value, value])}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="bg-zinc-950/50 border-zinc-800">
+                                      <SelectValue placeholder="Select post-processors" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="bg-zinc-950 border-zinc-800">
+                                    <SelectItem value="GFPGAN">GFPGAN</SelectItem>
+                                    <SelectItem value="CodeFormers">CodeFormers</SelectItem>
+                                    <SelectItem value="RealESRGAN_x4plus">RealESRGAN x4plus</SelectItem>
+                                    <SelectItem value="RealESRGAN_x2plus">RealESRGAN x2plus</SelectItem>
+                                    <SelectItem value="NMKD_Siax">NMKD Siax</SelectItem>
+                                    <SelectItem value="4x_AnimeSharp">4x AnimeSharp</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {field.value.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {field.value.map((processor, index) => (
+                                      <div key={index} className="flex items-center bg-zinc-800 rounded-md px-2 py-1">
+                                        <span className="text-xs text-zinc-300">{processor}</span>
+                                        <button
+                                          type="button"
+                                          className="ml-2 text-zinc-400 hover:text-zinc-200"
+                                          onClick={() => {
+                                            const newProcessors = [...field.value];
+                                            newProcessors.splice(index, 1);
+                                            field.onChange(newProcessors);
+                                          }}
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem value="multi" className="border-zinc-800">
+                        <AccordionTrigger className="text-zinc-300 hover:text-white">Multi-Select Options</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-4 mt-2">
+                            <FormField
+                              control={form.control}
+                              name="multiSelect"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Multi Select</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Enable multiple selection options
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="multiModel"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Multi Model</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Use multiple models for generation
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      disabled={!form.getValues("multiSelect")}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="multiSampler"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Multi Sampler</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Use multiple samplers for generation
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      disabled={!form.getValues("multiSelect")}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="multiClipSkip"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Multi CLIP Skip</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Use multiple CLIP skip values
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      disabled={!form.getValues("multiSelect")}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="multiSteps"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Multi Steps</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Use multiple step values
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      disabled={!form.getValues("multiSelect")}
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -817,6 +1144,20 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                 <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-2 text-xs">
                   Seed: {image.seed || 'Unknown'}
                 </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="absolute top-2 right-2 text-zinc-400 hover:text-zinc-200">
+                      <Eye size={20} />
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <img 
+                      src={image.img_url || image.base64String} 
+                      alt={`Generated image ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
             ))}
           </div>

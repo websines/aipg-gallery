@@ -136,11 +136,11 @@ export async function saveImageData(imageData: ImageDataInput): Promise<SaveResu
     
     // Save the image data to the database
     const { data, error } = await supabase
-      .from('images')
+      .from('image_data')
       .insert([
         {
           metadata_id: imageData.metadata_id,
-          img_url: imageUrl,
+          image_url: imageUrl,
           seed: imageData.seed || '',
         }
       ])

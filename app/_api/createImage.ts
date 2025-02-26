@@ -22,7 +22,30 @@ export const createImage = async (
   try {
     const resp = await fetch(`${BASE_API_URL}/generate/async`, {
       method: 'POST',
-      body: JSON.stringify(imageParams),
+      body: JSON.stringify({
+        ...imageParams,
+        params: {
+          sampler_name: imageParams.sampler,
+          cfg_scale: imageParams.guidance_scale || 7,
+          height: imageParams.height || 512,
+          width: imageParams.width || 512,
+          seed: imageParams.seed || "",
+          steps: imageParams.steps || 30,
+          karras: imageParams.karras || false,
+          hires_fix: imageParams.hires_fix || false,
+          clip_skip: imageParams.clipskip || 1,
+          tiling: imageParams.tiling || false,
+          post_processing: imageParams.post_processors || [],
+          n: imageParams.num_images || 1,
+          restore_faces: imageParams.restore_faces || false,
+        },
+        nsfw: imageParams.nsfw || false,
+        censor_nsfw: !imageParams.nsfw,
+        trusted_workers: true,
+        models: [imageParams.model],
+        r2: true,
+        shared: imageParams.publicView || false,
+      }),
       headers: {
         'Content-Type': 'application/json',
         'Client-Agent': ClientHeader,

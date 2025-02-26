@@ -1,65 +1,104 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseClient } from '@/lib/supabase/client';
-import { getJobById } from '@/app/_api/jobTrackingService';
-import { getFinishedImage } from '@/app/_api/fetchFinishedImage';
+import { NextRequest, NextResponse } from "next/server";
+import { getJobById } from "@/app/_api/jobTrackingService";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
-  const jobId = params.jobId;
-  const searchParams = request.nextUrl.searchParams;
-  const userId = searchParams.get('userId');
-
-  if (!jobId) {
-    return NextResponse.json(
-      { error: 'Job ID is required' },
-      { status: 400 }
-    );
-  }
-
   try {
-    // Get job status from the database
-    const { success, data: job, error } = await getJobById(jobId);
-
-    if (!success || !job) {
-      console.log(`Job ${jobId} not found or error:`, error);
-      
-      // If job not found in our database, try to fetch it from the API
-      if (userId) {
-        try {
-          const result = await getFinishedImage(jobId, userId);
-          
-          if (result.success) {
-            return NextResponse.json({
-              status: 'completed',
-              result: {
-                generations: result.generations
-              }
-            });
-          }
-        } catch (fetchError) {
-          console.error(`Error fetching job ${jobId} from API:`, fetchError);
-        }
-      }
-      
+    const { jobId } = params;
+    
+    if (!jobId) {
       return NextResponse.json(
-        { status: 'unknown', error: error || 'Job not found' },
+        { error: "Job ID is required" },
+        { status: 400 }
+      );
+    }
+    
+    // Get user from session
+    const supabase = createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    
+    // Get job from database
+    const job = await getJobById(jobId, user.id);
+    
+    if (!job) {
+      return NextResponse.json(
+        { error: "Job not found" },
         { status: 404 }
       );
     }
-
-    // Return job status and data
+    
+    // If job is completed, return the result
+    if (job.status === 'completed') {
+      return NextResponse.json({
+        status: 'completed',
+        success: true,
+        message: 'Job completed successfully',
+        images: job.result?.images || []
+      });
+    }
+    
+    // If job is failed or cancelled, return the error
+    if (job.status === 'failed' || job.status === 'cancelled') {
+      return NextResponse.json({
+        status: job.status,
+        success: false,
+        message: job.error || `Job ${job.status}`
+      });
+    }
+    
+    // If job is still processing, check with the API
+    if (job.status === 'processing') {
+      const result = await getFinishedImage(jobId, user.id);
+      
+      if (result.success) {
+        // Job is completed
+        return NextResponse.json({
+          status: 'completed',
+          success: true,
+          message: 'Job completed successfully',
+          images: result.images
+        });
+      } else if (result.status === 'PROCESSING') {
+        // Job is still processing
+        return NextResponse.json({
+          status: 'processing',
+          success: false,
+          message: 'Job is still processing',
+          waitTime: result.waitTime,
+          queuePosition: result.queuePosition
+        });
+      } else {
+        // Job failed
+        return NextResponse.json({
+          status: 'failed',
+          success: false,
+          message: result.message
+        });
+      }
+    }
+    
+    // Default response for other statuses
     return NextResponse.json({
       status: job.status,
-      result: job.result,
-      createdAt: job.created_at,
-      updatedAt: job.updated_at
+      success: false,
+      message: `Job is in ${job.status} state`
     });
+    
   } catch (error) {
-    console.error(`Error getting status for job ${jobId}:`, error);
+    console.error("Error checking job status:", error);
     return NextResponse.json(
-      { error: 'Failed to get job status' },
+      { error: "Failed to check job status" },
       { status: 500 }
     );
   }

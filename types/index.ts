@@ -192,14 +192,13 @@ export interface IArtBotImageDetails {
   }
 
 
-  export interface FinishedImageResponse {
-    success: boolean
-    jobId: string
-    canRate: boolean
-    kudos: number
-    generations: Array<GeneratedImage | FinishedImageResponseError>
+  export type FinishedImageResponse = {
+    success: true
+    status: string
+    message: string
+    images: GeneratedImage[]
   }
-  
+
   export interface FinishedImageResponseError {
     message: string
     status: string
@@ -233,13 +232,47 @@ export interface IArtBotImageDetails {
   
   type OmittedGeneratedImageProps = 'id' | 'img' | 'state'
   export interface GeneratedImage {
-    base64String: string | null;
-    hordeImageId: string;
-    thumbnail: string | null;
+    id?: string;
+    base64String?: string;
+    hordeImageId?: string;
+    thumbnail?: string;
     censored?: boolean;
     model?: string;
-    seed?: string;
+    seed?: number | string;
     worker_id?: string;
     worker_name?: string;
-    img_url?: string | null;
+    img_url?: string;
+    error?: string;
+  }
+
+  export interface FormSchema {
+    positivePrompt: string;
+    negativePrompt: string;
+    seed: string;
+    sampler: string;
+    batchSize: number;
+    steps: number;
+    width: number;
+    height: number;
+    guidance: number;
+    clipskip: number;
+    model: string;
+    karras: boolean;
+    nsfw: boolean;
+    hires_fix: boolean;
+    tiling: boolean;
+    publicView: boolean;
+    post_processors: string[];
+    restore_faces: boolean;
+    controlType: string;
+    xysType: boolean;
+    createVideo: boolean;
+    multiSelect: boolean;
+    multiModel: boolean;
+    multiSampler: boolean;
+    multiClipSkip: boolean;
+    multiSteps: boolean;
+    multiHiresFix: boolean;
+    multiKarras: boolean;
+    multiControlType: boolean;
   }

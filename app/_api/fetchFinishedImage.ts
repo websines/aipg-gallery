@@ -422,25 +422,26 @@ export const getFinishedImage = async (
       })
     );
     
-    // Update job status to completed with the result data
+    // Update job status to completed
     if (userId) {
       try {
-        await updateJobStatus(jobId, 'completed', { 
-          generations: generations.map(gen => ({
-            id: gen.id,
-            seed: gen.seed,
-            img_url: gen.img_url
-          }))
-        });
-        console.log(`Updated job ${jobId} status to completed`);
+        const jobData = await getJobById(jobId, userId);
+        
+        // Only update if the job exists and isn't already completed
+        if (jobData && jobData.status !== 'completed') {
+          await updateJobStatus(jobId, 'completed');
+        }
       } catch (trackingError) {
         console.error('Error updating job status to completed:', trackingError);
       }
     }
-
+    
+    // Return the processed images
     return {
       success: true,
-      generations
+      status: 'COMPLETED',
+      message: 'Job completed successfully',
+      images: generations.filter(Boolean) || [] // Ensure we always return an array, even if empty
     };
   } catch (error) {
     console.error("Error fetching finished image:", error);

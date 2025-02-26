@@ -1,4 +1,3 @@
-
 export const inferMimeTypeFromBase64 = (base64: string) => {
     if (base64.indexOf('data:') === 0) {
       let [data] = base64?.split(',') || ['']
@@ -87,21 +86,25 @@ export const base64toBlobURL = (base64String: string) => {
     }
   }
 
-  export const base64toBlob = (base64String: string) => {
+  export const base64toBlob = async (base64String: string, mimeType = 'image/png'): Promise<Blob> => {
     try {
-      const byteCharacters = atob(base64String);
+      // Remove the data URL prefix if present
+      const base64Data = base64String.includes('base64,') 
+        ? base64String.split('base64,')[1] 
+        : base64String;
+        
+      const byteCharacters = atob(base64Data);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: "img/jpg" });
+      const blob = new Blob([byteArray], { type: mimeType });
 
-      const url = URL.createObjectURL(blob)
-
-      return url
+      return blob;
     } catch (err) {
-      return ''
+      console.error("Error converting base64 to blob:", err);
+      throw new Error("Failed to convert base64 to blob");
     }
   }
 
@@ -141,7 +144,7 @@ export const base64toBlobURL = (base64String: string) => {
 
   export const generateBase64Thumbnail = async (
     base64: string,
-    jobId: string,
+    jobId?: string,
     maxWidth: number = 320,
     maxHeight: number = 768,
     quality: number = 0.9
