@@ -40,10 +40,9 @@ export default function RootLayout({
           <ImageProvider>
             <div className="relative flex flex-col min-h-screen">
               <NavBarComponent />
-              <main className="flex-grow pb-20">
+              <main className="flex-grow pt-16">
                 {children}
               </main>
-              <FooterNav />
               <Toaster />
             </div>
           </ImageProvider>

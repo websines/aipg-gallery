@@ -124,7 +124,7 @@ const ProfilePage = ({ user }: { user: User | null }) => {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <Card className="w-full max-w-md bg-zinc-900/30 backdrop-blur-lg border border-zinc-800/50 shadow-2xl">
             <CardHeader>
@@ -140,8 +140,8 @@ const ProfilePage = ({ user }: { user: User | null }) => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col gap-8">
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex flex-col gap-6">
         {/* Profile Header */}
         <Card className="w-full bg-zinc-900/30 backdrop-blur-lg border border-zinc-800/50 shadow-2xl overflow-hidden">
           <div className="h-32 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>

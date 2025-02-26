@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { UserNav } from "../homepage-components/UserNav";
 import { User } from "@supabase/supabase-js";
-import { Home, ImageIcon, History, Heart, Menu } from "lucide-react";
+import { Home, ImageIcon, History, Heart, User2Icon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ const FloatingNavbar = ({ user }: { user: User | null }) => {
     { name: "Generate", path: "/generate", icon: <ImageIcon className="w-4 h-4" /> },
     { name: "History", path: "/history", icon: <History className="w-4 h-4" /> },
     { name: "Likes", path: "/likes", icon: <Heart className="w-4 h-4" /> },
+    { name: "Profile", path: "/profile", icon: <User2Icon className="w-4 h-4" /> },
   ];
 
   return (
@@ -89,7 +90,7 @@ const FloatingNavbar = ({ user }: { user: User | null }) => {
               <Sheet>
                 <SheetTrigger asChild className="md:hidden">
                   <Button variant="ghost" size="icon" className="md:hidden text-zinc-400 hover:text-white">
-                    <Menu className="h-5 w-5" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="bg-zinc-900/95 backdrop-blur-lg border-zinc-800">
