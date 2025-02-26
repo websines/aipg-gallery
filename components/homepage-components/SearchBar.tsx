@@ -1,65 +1,49 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useState } from "react";
-import Link from "next/link";
 
-type SearchProps = {
-  onChange?: React.ChangeEventHandler<HTMLInputElement> | undefined;
-  value?: string | number | readonly string[] | undefined;
-};
-const SearchBar = ({ value, onChange }: SearchProps) => {
-  const [sliderValue, setSliderValue] = useState(4);
+import { Search, X } from "lucide-react";
+import { Dispatch, SetStateAction } from "react";
 
-  const handleSliderChange = (value: any) => {
-    setSliderValue(value);
-  };
+interface SearchBarProps {
+  value: string;
+  setValue: Dispatch<SetStateAction<string>>;
+}
 
+const SearchBar = ({ value, setValue }: SearchBarProps) => {
   return (
-    <div className="flex flex-col items-center justify-center space-y-4 w-full">
-      <div className="flex flex-row gap-2 items-center">
-        <img src="/aipg_logo.png" alt="aipowergrid" className="w-40 h-40" />
-        <h1 className="text-5xl font-medium my-4">AI Art Gallery</h1>
-      </div>
-      <div className="relative w-80">
-        <Search className="absolute top-0 bottom-0 w-6 h-6 my-auto text-gray-500 left-3" />
-        <Input
+    <div className="relative">
+      <div className="relative flex items-center">
+        <div className="absolute left-4 text-zinc-400">
+          <Search className="h-5 w-5" />
+        </div>
+        <input
           type="text"
-          placeholder="Search"
-          className="pl-12 pr-4 rounded-xl outline-blue-500 outline-1"
-          onChange={onChange}
           value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Search images..."
+          className="w-full bg-zinc-900/80 border border-zinc-800 rounded-full py-3 pl-12 pr-12 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
         />
+        {value && (
+          <button
+            onClick={() => setValue("")}
+            className="absolute right-4 text-zinc-400 hover:text-white transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
-      <div className="flex flex-row space-x-2">
-        <Button>Search</Button>
-        <Link href="/generate">
-          <Button variant="secondary">Generate</Button>
-        </Link>
-      </div>
-      <div className="my-8 p-4">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Slider
-                defaultValue={[4]}
-                max={10}
-                step={1}
-                className="w-[100px]"
-                onValueChange={(value) => handleSliderChange(value)}
-              />
-            </TooltipTrigger>
-            <TooltipContent>{sliderValue}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      
+      <div className="flex flex-wrap gap-2 mt-3 justify-center">
+        {["Landscape", "Portrait", "Abstract", "Animals", "Cyberpunk"].map(
+          (tag) => (
+            <button
+              key={tag}
+              onClick={() => setValue(tag)}
+              className="px-3 py-1 text-xs bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-full transition-colors border border-zinc-700/50"
+            >
+              {tag}
+            </button>
+          )
+        )}
       </div>
     </div>
   );

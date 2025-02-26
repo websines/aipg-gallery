@@ -232,9 +232,14 @@ export interface IArtBotImageDetails {
   }
   
   type OmittedGeneratedImageProps = 'id' | 'img' | 'state'
-  export interface GeneratedImage
-    extends Omit<AiHordeGeneration, OmittedGeneratedImageProps> {
-    base64String: string
-    hordeImageId: string
-    thumbnail: string
+  export interface GeneratedImage {
+    base64String: string | null;
+    hordeImageId: string;
+    thumbnail: string | null;
+    censored?: boolean;
+    model?: string;
+    seed?: string;
+    worker_id?: string;
+    worker_name?: string;
+    img_url?: string | null;
   }

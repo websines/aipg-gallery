@@ -35,14 +35,16 @@ import SliderWithCounter from "./SliderComponent";
 import { Card, CardContent } from "@/components/ui/card";
 
 import ImageCarousel from "@/components/image-gen-components/ImageCarousel";
+import ActiveJobsPanel from "@/components/image-gen-components/ActiveJobsPanel";
 
 import fetchAvailableModels from "@/app/_api/fetchModels";
-import { Model } from "@/types";
+import { Model, GeneratedImage } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { transformFormData } from "@/utils/validationUtils";
 import { createImage } from "@/app/_api/createImage";
 import useJobIdStore from "@/stores/jobIDStore";
 import { User } from "@supabase/supabase-js";
+import { createSupabaseClient } from "@/lib/supabase/client";
 import useImageMetadataStore from "@/stores/ImageMetadataStore";
 import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
 import {
@@ -51,6 +53,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -113,10 +118,15 @@ type MetaData = {
 };
 
 const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
-  const [generateDisabled, setGenerateDisable] = useState(true);
+  const [generateDisabled, setGenerateDisable] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [jobID, setJob] = useState("");
   const { toast } = useToast();
+  const [generationHistory, setGenerationHistory] = useState<string[]>([]);
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
+  
+  // Initialize Supabase client
+  const supabase = createSupabaseClient();
 
   const [metadata, setMetadata] = useState<MetaData>({
     positivePrompt: "",
@@ -160,8 +170,10 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
   });
 
   useEffect(() => {
-    if (user) {
-      setGenerateDisable(!generateDisabled);
+    // No need to toggle generate disabled anymore
+    // Just make sure we have a user
+    if (!user) {
+      setGenerateDisable(true);
     }
   }, [user]);
 
@@ -169,535 +181,647 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
     (state) => state.initializeMetadata
   );
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    setMetadata({
-      positivePrompt: data.postivePrompt,
-      negativePrompt: data.negativePrompt,
-      sampler: data.sampler,
-      model: data.model,
-      guidance: data.guidance,
-      publicView: data.publicView,
-    });
-
-    const transformedData = transformFormData(data);
-
-    startTransition(async () => {
-      const response = await createImage(transformedData);
-
-      if (response.message) {
-        toast({
-          description: response.message,
-        });
-      }
-      setJob(response.jobId!);
+  const resetForm = () => {
+    form.reset({
+      postivePrompt: "",
+      negativePrompt: "",
+      seed: "",
+      sampler: "k_lms",
+      batchSize: 1,
+      steps: 15,
+      width: 512,
+      height: 512,
+      guidance: 7,
+      clipskip: 1,
+      model: form.getValues("model"), // Keep the selected model
+      karras: false,
+      nsfw: false,
+      hires_fix: false,
+      tiling: false,
+      publicView: false,
     });
   };
 
-  useEffect(() => {
-    updateMetadata(metadata);
-  }, [metadata]);
+  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to generate images",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const setJobId = useJobIdStore((state: any) => state.setJobId);
-  setJobId(jobID);
+    try {
+      setGenerateDisable(true);
+      
+      // Update metadata in the store
+      updateMetadata({
+        positivePrompt: data.postivePrompt,
+        negativePrompt: data.negativePrompt,
+        sampler: data.sampler,
+        model: data.model,
+        guidance: data.guidance,
+        publicView: data.publicView,
+      });
+
+      // Transform the form data for the API
+      const transformedData = {
+        prompt: data.postivePrompt,
+        negative_prompt: data.negativePrompt,
+        sampler: data.sampler,
+        model: data.model,
+        guidance_scale: data.guidance,
+        num_images: 2,
+      };
+
+      console.log("Submitting image generation request:", transformedData);
+      
+      // Create the image generation job
+      const response = await createImage(transformedData, user?.id);
+      
+      if (response.success && response.jobId) {
+        console.log("Image generation job created:", response.jobId);
+        setJob(response.jobId);
+        
+        // Show a toast notification
+        toast({
+          title: "Image Generation Started",
+          description: "Your image is being generated. This may take a minute.",
+        });
+        
+        // Start polling for the job status
+        startPollingJobStatus(response.jobId, user.id);
+      } else {
+        console.error("Failed to create image generation job:", response.error);
+        toast({
+          title: "Error",
+          description: "Failed to start image generation. Please try again.",
+          variant: "destructive",
+        });
+        setGenerateDisable(false);
+      }
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+      setGenerateDisable(false);
+    }
+  };
+
+  // Handle completed jobs from the ActiveJobsPanel
+  const handleJobCompleted = (jobId: string, images: GeneratedImage[]) => {
+    console.log(`Job ${jobId} completed with images:`, images);
+    setGeneratedImages(prev => [...images, ...prev]);
+    setGenerateDisable(false);
+  };
+
+  // Start polling for job status
+  const startPollingJobStatus = async (jobId: string, userId: string) => {
+    console.log(`Starting to poll for job status: ${jobId}`);
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes (5s interval)
+    
+    const pollInterval = setInterval(async () => {
+      attempts++;
+      
+      try {
+        // Check job status
+        const response = await fetch(`/api/jobs/${jobId}/status?userId=${userId}`);
+        const data = await response.json();
+        
+        console.log(`Job ${jobId} status (attempt ${attempts}):`, data);
+        
+        if (data.status === 'completed' && data.result?.generations) {
+          // Job completed successfully
+          clearInterval(pollInterval);
+          
+          // Process the generated images
+          const images = data.result.generations.map((gen: any) => ({
+            id: gen.id,
+            seed: gen.seed,
+            img_url: gen.img_url
+          }));
+          
+          handleJobCompleted(jobId, images);
+          
+          toast({
+            title: "Image Generation Complete",
+            description: "Your images have been generated successfully!",
+          });
+        } else if (data.status === 'failed') {
+          // Job failed
+          clearInterval(pollInterval);
+          setGenerateDisable(false);
+          
+          toast({
+            title: "Image Generation Failed",
+            description: "Failed to generate images. Please try again.",
+            variant: "destructive",
+          });
+        } else if (attempts >= maxAttempts) {
+          // Timeout
+          clearInterval(pollInterval);
+          setGenerateDisable(false);
+          
+          toast({
+            title: "Timeout",
+            description: "Image generation is taking longer than expected. Check back later.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error(`Error polling job status for ${jobId}:`, error);
+        
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          setGenerateDisable(false);
+          
+          toast({
+            title: "Error",
+            description: "Failed to check image generation status. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    }, 5000); // Check every 5 seconds
+  };
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
-      <Card className="bg-transparent border-0">
-        <CardContent className="flex flex-col items-center justify-center w-full">
+      <Card className="bg-transparent border-0 w-full">
+        <CardContent className="flex flex-col items-center justify-center w-full p-0">
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              className="my-2 md:my-8 p-4 flex flex-col gap-4"
+              onSubmit={form.handleSubmit((data) => {
+                handleSubmit(data);
+                // Don't reset the form immediately to avoid UI flicker
+                setTimeout(() => {
+                  // Keep the model selection but reset other fields
+                  const currentModel = form.getValues("model");
+                  form.reset({
+                    ...form.getValues(),
+                    postivePrompt: "",
+                    negativePrompt: "",
+                    seed: "",
+                    model: currentModel,
+                  });
+                }, 500);
+              })}
+              className="w-full p-6"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <fieldset className="grid gap-6 rounded-lg border p-4 md:col-span-2">
-                  <legend className="-ml-1 px-1 text-sm font-medium">
-                    Prompts
-                  </legend>
-                  <FormField
-                    control={form.control}
-                    name="postivePrompt"
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel>Prompt</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="negativePrompt"
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel className="flex flex-row items-center gap-2">
-                            Negative Prompt{" "}
-                            <ToolTipComponent tooltipText="Exclude stuff from your image" />
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="negative prompts.."
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="seed"
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel className="flex flex-row items-center gap-2">
-                            Seed
-                            <ToolTipComponent tooltipText="Random Seed" />
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Seed.. (if you do not enter, one will be randomly generated)"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                </fieldset>
-
-                <fieldset className="grid gap-6 rounded-lg border p-4">
-                  <legend className="-ml-1 px-1 text-sm font-medium">
-                    Settings
-                  </legend>
-                  <FormField
-                    control={form.control}
-                    name="batchSize"
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel className="flex flex-row items-center gap-2">
-                            Batch size
-                            <ToolTipComponent tooltipText="Number of images" />
-                          </FormLabel>
-                          <FormControl>
-                            <SliderWithCounter
-                              min={1}
-                              max={4}
-                              onValueChange={(value: any) => {
-                                field.onChange(value[0] || value);
-                              }}
-                              step={1}
-                              defaultValue={1}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="steps"
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel className="flex flex-row items-center gap-2">
-                            Steps
-                            <ToolTipComponent tooltipText="Steps" />
-                          </FormLabel>
-                          <FormControl>
-                            <SliderWithCounter
-                              min={1}
-                              max={50}
-                              onValueChange={(value: any) => {
-                                field.onChange(value[0] || value);
-                              }}
-                              step={1}
-                              defaultValue={7}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="width"
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel className="flex flex-row items-center gap-2">
-                            Width
-                            <ToolTipComponent tooltipText="Width" />
-                          </FormLabel>
-                          <FormControl>
-                            <SliderWithCounter
-                              min={64}
-                              max={1536}
-                              onValueChange={(value: any) => {
-                                field.onChange(value[0] || value);
-                              }}
-                              step={64}
-                              defaultValue={512}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="height"
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel className="flex flex-row items-center gap-2">
-                            Height
-                            <ToolTipComponent tooltipText="Height" />
-                          </FormLabel>
-                          <FormControl>
-                            <SliderWithCounter
-                              min={64}
-                              max={1536}
-                              onValueChange={(value: any) => {
-                                field.onChange(value[0] || value);
-                              }}
-                              step={64}
-                              defaultValue={512}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="guidance"
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel className="flex flex-row items-center gap-2">
-                            Guidance
-                            <ToolTipComponent tooltipText="Guidance" />
-                          </FormLabel>
-                          <FormControl>
-                            <SliderWithCounter
-                              min={1}
-                              max={24}
-                              onValueChange={(value: any) => {
-                                field.onChange(value[0] || value);
-                              }}
-                              step={0.5}
-                              defaultValue={7}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="clipskip"
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel className="flex flex-row items-center gap-2">
-                            Clip Skip
-                            <ToolTipComponent tooltipText="Clip Skip" />
-                          </FormLabel>
-                          <FormControl>
-                            <SliderWithCounter
-                              min={1}
-                              max={10}
-                              onValueChange={(value: any) => {
-                                field.onChange(value[0] || value);
-                              }}
-                              step={1}
-                              defaultValue={1}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                </fieldset>
-
-                <div className="flex flex-col gap-4">
-                  <fieldset className="grid gap-6 rounded-lg border p-4">
-                    <legend className="-ml-1 px-1 text-sm font-medium">
-                      Models
-                    </legend>
-                    <FormField
-                      control={form.control}
-                      name="model"
-                      render={({ field }) => {
-                        return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left column - Main form */}
+                <div className="space-y-6">
+                  {/* Active Jobs Panel */}
+                  {user && (
+                    <div className="mb-6">
+                      <ActiveJobsPanel onJobComplete={handleJobCompleted} />
+                    </div>
+                  )}
+                  
+                  {/* Prompt Section */}
+                  <div className="bg-zinc-900/60 rounded-xl border border-zinc-800/60 p-5 shadow-md">
+                    <h3 className="text-lg font-medium text-zinc-200 mb-4 flex items-center">
+                      <span className="mr-2">✨</span> Prompt
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="postivePrompt"
+                        render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex flex-row items-center gap-2">
-                              Model
-                              <ToolTipComponent tooltipText="Image Generating Model" />
-                            </FormLabel>
+                            <FormLabel className="text-zinc-300">Positive Prompt</FormLabel>
                             <FormControl>
-                              <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a Model" />
-                                </SelectTrigger>
-                                <SelectContent className="max-h-[200px]">
-                                  <SelectGroup>
-                                    <SelectLabel>Available Models</SelectLabel>
-                                    {isLoading && (
-                                      <div className="p-2 text-sm">
-                                        Loading...
-                                      </div>
-                                    )}
-                                    {error && (
-                                      <div className="p-2 text-sm">
-                                        Error: {error.message}
-                                      </div>
-                                    )}
-                                    {models?.length < 1 && (
-                                      <div className="p-2 text-sm">
-                                        No models found
-                                      </div>
-                                    )}
-
-                                    {models?.map((model: Model, idx: any) => (
-                                      <SelectItem value={model?.name} key={idx}>
-                                        {model?.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectGroup>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="sampler"
-                      render={({ field }) => {
-                        return (
-                          <FormItem>
-                            <FormLabel className="flex flex-row items-center gap-2">
-                              Sampler
-                              <ToolTipComponent tooltipText="Your Sampler" />
-                            </FormLabel>
-                            <FormControl>
-                              <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a sampler" />
-                                </SelectTrigger>
-                                <SelectContent className="max-h-[200px]">
-                                  <SelectGroup>
-                                    <SelectLabel>Sampler Lite</SelectLabel>
-                                    {samplerListLite.map((list, idx) => (
-                                      <SelectItem value={list} key={idx}>
-                                        {list}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectGroup>
-                                  <SelectGroup>
-                                    <SelectLabel>DPM Samplers</SelectLabel>
-                                    {dpmSamplers.map((list, idx) => (
-                                      <SelectItem value={list} key={idx}>
-                                        {list}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectGroup>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
-                    {/* <FormField
-                      control={form.control}
-                      name="postprocessors"
-                      render={({ field }) => {
-                        return (
-                          <FormItem>
-                            <FormLabel className="flex flex-row items-center gap-2">
-                              Post-Processors - DO NOT USE THIS FOR NOW
-                              <ToolTipComponent tooltipText="Image Generating Model" />
-                            </FormLabel>
-                            <FormControl>
-                              <MultipleSelector
-                                selectFirstItem={false}
-                                defaultOptions={PostProcessorOptions}
-                                hidePlaceholderWhenSelected
-                                placeholder="Select one or more pre-processors"
-                                emptyIndicator={
-                                  <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
-                                    no results found.
-                                  </p>
-                                }
-                                value={field.value}
-                                onChange={field.onChange}
+                              <Textarea 
+                                placeholder="Describe what you want to see in the image..." 
+                                className="min-h-24 bg-zinc-950/50 border-zinc-800 focus:border-purple-500 transition-colors" 
+                                {...field} 
                               />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
-                        );
-                      }}
-                    /> */}
-                  </fieldset>
-
-                  <fieldset className="grid gap-6 rounded-lg border p-4">
-                    <legend className="-ml-1 px-1 text-sm font-medium">
-                      Options
-                    </legend>
-
-                    <div className="grid grid-cols-2 gap-2 md:gap-4 my-4">
-                      <FormField
-                        control={form.control}
-                        name="karras"
-                        render={({ field }) => {
-                          return (
-                            <FormItem className="flex flex-row items-center justify-start gap-2">
-                              <FormLabel className="flex flex-row items-center gap-1 mt-2">
-                                Karras
-                                <ToolTipComponent tooltipText="Karras" />
-                              </FormLabel>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          );
-                        }}
+                        )}
                       />
+                      
                       <FormField
                         control={form.control}
-                        name="hires_fix"
-                        render={({ field }) => {
-                          return (
-                            <FormItem className="flex flex-row items-center justify-start gap-2">
-                              <FormLabel className="flex flex-row items-center gap-1 mt-2">
-                                Hi-res Fix
-                                <ToolTipComponent tooltipText="Hi-res fix" />
-                              </FormLabel>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          );
-                        }}
+                        name="negativePrompt"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-zinc-300 flex items-center gap-2">
+                              Negative Prompt
+                              <ToolTipComponent tooltipText="Specify what you don't want to see in the image" />
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Elements to exclude from the image..."
+                                className="bg-zinc-950/50 border-zinc-800 focus:border-purple-500 transition-colors"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
+                      
                       <FormField
                         control={form.control}
-                        name="nsfw"
-                        render={({ field }) => {
-                          return (
-                            <FormItem className="flex flex-row items-center justify-start gap-2">
-                              <FormLabel className="flex flex-row items-center gap-1 mt-2">
-                                NSFW
-                                <ToolTipComponent tooltipText="NSFW" />
-                              </FormLabel>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          );
-                        }}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="tiling"
-                        render={({ field }) => {
-                          return (
-                            <FormItem className="flex flex-row items-center justify-start gap-2">
-                              <FormLabel className="flex flex-row items-center gap-1 mt-2">
-                                Tiling
-                                <ToolTipComponent tooltipText="tiling" />
-                              </FormLabel>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          );
-                        }}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="publicView"
-                        render={({ field }) => {
-                          return (
-                            <FormItem className="flex flex-row items-center justify-start gap-2">
-                              <FormLabel className="flex flex-row items-center gap-1 mt-2">
-                                Public Image
-                                <ToolTipComponent tooltipText="Make it visible to others" />
-                              </FormLabel>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          );
-                        }}
+                        name="seed"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-zinc-300 flex items-center gap-2">
+                              Seed
+                              <ToolTipComponent tooltipText="Use a specific seed for reproducible results" />
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Leave empty for random seed"
+                                className="bg-zinc-950/50 border-zinc-800 focus:border-purple-500 transition-colors"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
-                  </fieldset>
+                  </div>
+                  
+                  {/* Model Selection */}
+                  <div className="bg-zinc-900/60 rounded-xl border border-zinc-800/60 p-5 shadow-md">
+                    <h3 className="text-lg font-medium text-zinc-200 mb-4 flex items-center">
+                      <span className="mr-2">🧠</span> Model Selection
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="model"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-zinc-300">Model</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="bg-zinc-950/50 border-zinc-800 focus:border-purple-500 transition-colors">
+                                  <SelectValue placeholder="Select a model" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="bg-zinc-950 border-zinc-800">
+                                <SelectGroup>
+                                  <SelectLabel>Available Models</SelectLabel>
+                                  {models?.map((model: Model) => (
+                                    <SelectItem
+                                      key={model.name}
+                                      value={model.name}
+                                      disabled={model.count === 0}
+                                    >
+                                      {model.name} ({model.count} workers)
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Generate Button */}
+                  <div className="flex justify-center">
+                    <Button
+                      type="submit"
+                      disabled={isPending || !form.formState.isValid}
+                      className="w-full md:w-auto px-8 py-6 text-lg font-medium bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                    >
+                      {isPending ? (
+                        <div className="flex items-center gap-2">
+                          <LoadingSpinner size="sm" />
+                          <span>Generating...</span>
+                        </div>
+                      ) : (
+                        "Generate Image"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Right column - Advanced settings */}
+                <div className="space-y-6">
+                  <div className="bg-zinc-900/60 rounded-xl border border-zinc-800/60 p-5 shadow-md">
+                    <h3 className="text-lg font-medium text-zinc-200 mb-4 flex items-center">
+                      <span className="mr-2">⚙️</span> Advanced Settings
+                    </h3>
+                    
+                    <Accordion type="single" collapsible className="w-full">
+                      <AccordionItem value="dimensions" className="border-zinc-800">
+                        <AccordionTrigger className="text-zinc-300 hover:text-white">Dimensions</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-2 gap-4 mt-2">
+                            <FormField
+                              control={form.control}
+                              name="width"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-zinc-300">Width</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value.toString()}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="bg-zinc-950/50 border-zinc-800">
+                                        <SelectValue placeholder="Width" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="bg-zinc-950 border-zinc-800">
+                                      <SelectItem value="512">512px</SelectItem>
+                                      <SelectItem value="768">768px</SelectItem>
+                                      <SelectItem value="1024">1024px</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="height"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-zinc-300">Height</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value.toString()}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="bg-zinc-950/50 border-zinc-800">
+                                        <SelectValue placeholder="Height" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="bg-zinc-950 border-zinc-800">
+                                      <SelectItem value="512">512px</SelectItem>
+                                      <SelectItem value="768">768px</SelectItem>
+                                      <SelectItem value="1024">1024px</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      <AccordionItem value="quality" className="border-zinc-800">
+                        <AccordionTrigger className="text-zinc-300 hover:text-white">Quality Settings</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-4 mt-2">
+                            <FormField
+                              control={form.control}
+                              name="steps"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-zinc-300 flex items-center gap-2">
+                                    Steps
+                                    <ToolTipComponent tooltipText="Higher values produce more detailed images but take longer" />
+                                  </FormLabel>
+                                  <FormControl>
+                                    <SliderWithCounter
+                                      min={10}
+                                      max={50}
+                                      onValueChange={(value: any) => {
+                                        field.onChange(value[0] || value);
+                                      }}
+                                      step={1}
+                                      defaultValue={[field.value]}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="guidance"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-zinc-300 flex items-center gap-2">
+                                    Guidance Scale
+                                    <ToolTipComponent tooltipText="How closely to follow your prompt (higher = more faithful)" />
+                                  </FormLabel>
+                                  <FormControl>
+                                    <SliderWithCounter
+                                      min={1}
+                                      max={20}
+                                      onValueChange={(value: any) => {
+                                        field.onChange(value[0] || value);
+                                      }}
+                                      step={0.5}
+                                      defaultValue={[field.value]}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="batchSize"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-zinc-300 flex items-center gap-2">
+                                    Batch Size
+                                    <ToolTipComponent tooltipText="Number of images to generate at once" />
+                                  </FormLabel>
+                                  <FormControl>
+                                    <SliderWithCounter
+                                      min={1}
+                                      max={4}
+                                      onValueChange={(value: any) => {
+                                        field.onChange(value[0] || value);
+                                      }}
+                                      step={1}
+                                      defaultValue={[field.value]}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      <AccordionItem value="sampler" className="border-zinc-800">
+                        <AccordionTrigger className="text-zinc-300 hover:text-white">Sampler</AccordionTrigger>
+                        <AccordionContent>
+                          <FormField
+                            control={form.control}
+                            name="sampler"
+                            render={({ field }) => (
+                              <FormItem className="mt-2">
+                                <FormLabel className="text-zinc-300">Sampler</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="bg-zinc-950/50 border-zinc-800">
+                                      <SelectValue placeholder="Select a sampler" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="bg-zinc-950 border-zinc-800">
+                                    <SelectItem value="k_euler">k_euler</SelectItem>
+                                    <SelectItem value="k_euler_ancestral">k_euler_ancestral</SelectItem>
+                                    <SelectItem value="k_heun">k_heun</SelectItem>
+                                    <SelectItem value="k_dpm_2">k_dpm_2</SelectItem>
+                                    <SelectItem value="k_dpm_2_ancestral">k_dpm_2_ancestral</SelectItem>
+                                    <SelectItem value="k_dpmpp_2s_ancestral">k_dpmpp_2s_ancestral</SelectItem>
+                                    <SelectItem value="k_dpmpp_2m">k_dpmpp_2m</SelectItem>
+                                    <SelectItem value="k_dpmpp_sde">k_dpmpp_sde</SelectItem>
+                                    <SelectItem value="DDIM">DDIM</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      <AccordionItem value="options" className="border-zinc-800">
+                        <AccordionTrigger className="text-zinc-300 hover:text-white">Additional Options</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-4 mt-2">
+                            <FormField
+                              control={form.control}
+                              name="karras"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Karras</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Use Karras noise scheduling
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="hires_fix"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Hires Fix</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Improve high-resolution image quality
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="publicView"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-zinc-300">Public View</FormLabel>
+                                    <FormDescription className="text-xs text-zinc-500">
+                                      Allow others to see your generated images
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </div>
                 </div>
               </div>
-              <Button
-                type="submit"
-                className="my-8 "
-                disabled={generateDisabled}
-              >
-                {generateDisabled
-                  ? "Log In To Access Generator"
-                  : "Generate image(s)"}
-                {isPending && <LoadingSpinner className="text-black" />}
-              </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
-      <div>
-        <ImageCarousel user={user} />
-      </div>
+
+      {/* Image Results */}
+      {jobID && (
+        <div className="w-full mt-8">
+          <ImageCarousel
+            jobId={jobID}
+            userId={user?.id}
+            onImagesLoaded={(images) => setGeneratedImages(images)}
+          />
+        </div>
+      )}
+      
+      {/* Display generated images from completed jobs */}
+      {!jobID && generatedImages.length > 0 && (
+        <div className="w-full mt-8">
+          <h2 className="text-xl font-semibold mb-4">Generated Images</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {generatedImages.map((image, index) => (
+              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-zinc-800">
+                {image.img_url ? (
+                  <img 
+                    src={image.img_url} 
+                    alt={`Generated image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : image.base64String ? (
+                  <img 
+                    src={image.base64String} 
+                    alt={`Generated image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                    <p className="text-zinc-500">Image not available</p>
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-2 text-xs">
+                  Seed: {image.seed || 'Unknown'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

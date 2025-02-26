@@ -1,5 +1,5 @@
 import React from "react";
-import Navbar from "./Navbar";
+import FloatingNavbar from "./FloatingNavbar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const NavBarComponent = async () => {
@@ -8,7 +8,7 @@ const NavBarComponent = async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return <Navbar user={user} />;
+  return <FloatingNavbar user={user} />;
 };
 
 export default NavBarComponent;

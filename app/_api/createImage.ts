@@ -1,13 +1,11 @@
 import { defaultApiKey, ClientHeader, BASE_API_URL } from "@/constants"
 import { CreateImageResponse, IApiParams, GenerateResponse } from "@/types"
 import { fetchApikey } from "./fetchApiKey"
-
-
-
-let isPending = false
+import { createJobTracking } from "./jobTrackingService"
 
 export const createImage = async (
-  imageDetails: any
+  imageDetails: any,
+  userId?: string
 ): Promise<CreateImageResponse> => {
   const apikey = defaultApiKey 
 
@@ -19,15 +17,6 @@ export const createImage = async (
     }
   }
 
-  if (isPending) {
-    return {
-      success: false,
-      status: 'WAITING_FOR_PENDING_JOB',
-      message: 'Waiting for pending request to finish.'
-    }
-  }
-
-  isPending = true
   const imageParams = imageDetails
 
   try {
@@ -44,7 +33,6 @@ export const createImage = async (
     const statusCode = resp.status
     const data = await resp.json()
     const { id, message = '', kudos }: GenerateResponse = data
-    isPending = false
 
     if (imageDetails.dry_run && kudos) {
       return {
@@ -61,35 +49,75 @@ export const createImage = async (
       }
     }
 
-    
-
-  
-    
+    if (statusCode === 401) {
+      return {
+        success: false,
+        status: 'INVALID_API_KEY',
+        message: 'Invalid API key'
+      }
+    }
 
     if (statusCode === 429) {
       return {
-        statusCode,
         success: false,
-        status: 'MAX_REQUEST_LIMIT',
-        message
+        status: 'RATE_LIMITED',
+        message: 'You are being rate limited. Please try again later.'
       }
     }
 
     if (statusCode === 503) {
       return {
-        statusCode,
         success: false,
-        status: 'HORDE_OFFLINE',
-        message
+        status: 'MAINTENANCE_MODE',
+        message: 'The Stable Horde is in maintenance mode. Please try again later.'
       }
     }
 
-    if (!id) {
+    if (statusCode === 400) {
       return {
-        statusCode,
         success: false,
-        message,
-        status: 'MISSING_JOB_ID'
+        status: 'BAD_REQUEST',
+        message: message || 'Bad request'
+      }
+    }
+
+    if (statusCode === 403) {
+      return {
+        success: false,
+        status: 'FORBIDDEN',
+        message: message || 'Forbidden'
+      }
+    }
+
+    if (statusCode !== 202) {
+      return {
+        success: false,
+        status: 'UNKNOWN_ERROR',
+        message: message || 'Unknown error'
+      }
+    }
+
+    // If we have a user ID, track this job in the database
+    if (userId && id) {
+      try {
+        // Extract the prompt from the image parameters
+        const prompt = imageParams.prompt || '';
+        const model = imageParams.params?.model || '';
+        
+        // Create job tracking record
+        await createJobTracking({
+          jobId: id,
+          userId,
+          status: 'pending',
+          prompt,
+          model,
+          params: imageParams.params || {}
+        });
+        
+        console.log(`Job tracking created for job ID: ${id}`);
+      } catch (trackingError) {
+        console.error('Error creating job tracking:', trackingError);
+        // We don't want to fail the request if tracking fails
       }
     }
 
@@ -97,26 +125,12 @@ export const createImage = async (
       success: true,
       jobId: id
     }
-  } catch (err) {
-    isPending = false
-
-    // Handles weird issue where Safari encodes API key using unicode text.
-    if (
-      //@ts-ignore
-      err.name === 'TypeError' &&
-      //@ts-ignore
-      err.message.indexOf(`Header 'apikey' has invalid value`) >= 0
-    ) 
-
-   
-
-    console.log(`--- createImage: Unknown Error ---`)
-    console.log(err)
-
+  } catch (error) {
+    console.error('Error creating image:', error)
     return {
       success: false,
-      status: 'UNKNOWN_ERROR',
-      message: 'Unable to create image. Please try again soon.'
+      status: 'NETWORK_ERROR',
+      message: 'Network error'
     }
   }
 }
