@@ -7,7 +7,7 @@ export const createImage = async (
   imageDetails: any,
   userId?: string
 ): Promise<CreateImageResponse> => {
-  const apikey = defaultApiKey 
+  const apikey = await fetchApikey(userId)
 
   if (!apikey) {
     return {

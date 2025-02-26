@@ -17,6 +17,7 @@ import { AuthForm } from "../auth-components/AuthForm";
 import { SignOutUser } from "@/actions/auth-actions";
 import { type User as UserType } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export function UserNav({ user }: { user: UserType | null }) {
   return (
@@ -55,12 +56,14 @@ export function UserNav({ user }: { user: UserType | null }) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-zinc-800" />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="cursor-pointer text-zinc-300 focus:bg-zinc-800 focus:text-white">
-                Profile
-                <DropdownMenuShortcut>
-                  <User className="w-4 h-4" />
-                </DropdownMenuShortcut>
-              </DropdownMenuItem>
+              <Link href="/profile" passHref>
+                <DropdownMenuItem className="cursor-pointer text-zinc-300 focus:bg-zinc-800 focus:text-white">
+                  Profile
+                  <DropdownMenuShortcut>
+                    <User className="w-4 h-4" />
+                  </DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </Link>
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="bg-zinc-800" />
             <DropdownMenuItem

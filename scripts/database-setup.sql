@@ -23,6 +23,15 @@ CREATE TABLE IF NOT EXISTS image_data (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create image_likes table
+CREATE TABLE IF NOT EXISTS image_likes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  image_id UUID REFERENCES image_data(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, image_id)
+);
+
 -- Create RLS policies for image_metadata
 ALTER TABLE image_metadata ENABLE ROW LEVEL SECURITY;
 
@@ -77,6 +86,23 @@ CREATE POLICY "Users can view image data for their metadata or public metadata"
     )
   );
 
+-- Create RLS policies for image_likes
+ALTER TABLE image_likes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can insert their own likes"
+  ON image_likes FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own likes"
+  ON image_likes FOR DELETE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view all likes"
+  ON image_likes FOR SELECT
+  USING (true);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS image_metadata_user_id_idx ON image_metadata(user_id);
 CREATE INDEX IF NOT EXISTS image_data_metadata_id_idx ON image_data(metadata_id);
+CREATE INDEX IF NOT EXISTS image_likes_user_id_idx ON image_likes(user_id);
+CREATE INDEX IF NOT EXISTS image_likes_image_id_idx ON image_likes(image_id);
