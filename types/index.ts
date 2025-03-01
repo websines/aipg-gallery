@@ -8,6 +8,7 @@ export interface CreateImageResponse {
     status?: string
     message?: string
     kudos?: number
+    error?: string
   }
 
   export interface GenerateResponse {
@@ -243,11 +244,12 @@ export interface IArtBotImageDetails {
     worker_name?: string;
     img_url?: string;
     error?: string;
+    saved?: boolean;
   }
 
   export interface FormSchema {
-    positivePrompt: string;
-    negativePrompt: string;
+    postivePrompt: string;
+    negativePrompt: string | undefined;
     seed: string;
     sampler: string;
     batchSize: number;
@@ -267,6 +269,10 @@ export interface IArtBotImageDetails {
     controlType: string;
     xysType: boolean;
     createVideo: boolean;
+    generationMode: "text-to-image" | "image-to-image" | "inpainting";
+    sourceImage?: string;
+    sourceMask?: string;
+    denoising_strength: number;
     multiSelect: boolean;
     multiModel: boolean;
     multiSampler: boolean;

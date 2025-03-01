@@ -17,35 +17,63 @@ export const createImage = async (
     }
   }
 
-  const imageParams = imageDetails
+  const imageParams = imageDetails;
+  const isImg2Img = !!imageParams.sourceImage;
+  const isInpainting = !!imageParams.sourceImage && !!imageParams.sourceMask;
+
+  // Remove data:image prefix for base64 encoded images if present
+  let sourceImage = imageParams.sourceImage;
+  if (sourceImage && typeof sourceImage === 'string' && sourceImage.startsWith('data:image')) {
+    sourceImage = sourceImage.split(',')[1];
+  }
+
+  let sourceMask = imageParams.sourceMask;
+  if (sourceMask && typeof sourceMask === 'string' && sourceMask.startsWith('data:image')) {
+    sourceMask = sourceMask.split(',')[1];
+  }
 
   try {
+    const requestBody: any = {
+      ...imageParams,
+      params: {
+        sampler_name: imageParams.sampler,
+        cfg_scale: imageParams.guidance_scale || 7,
+        height: imageParams.height || 512,
+        width: imageParams.width || 512,
+        seed: imageParams.seed || "",
+        steps: imageParams.steps || 30,
+        karras: imageParams.karras || false,
+        hires_fix: imageParams.hires_fix || false,
+        clip_skip: imageParams.clipskip || 1,
+        tiling: imageParams.tiling || false,
+        post_processing: imageParams.post_processors || [],
+        n: imageParams.num_images || 1,
+        restore_faces: imageParams.restore_faces || false,
+      },
+      nsfw: imageParams.nsfw || false,
+      censor_nsfw: !imageParams.nsfw,
+      trusted_workers: true,
+      models: [imageParams.model],
+      r2: true,
+      shared: imageParams.publicView || false,
+    };
+
+    // Add image-to-image specific parameters
+    if (isImg2Img) {
+      requestBody.source_image = sourceImage;
+      requestBody.params.denoising_strength = imageParams.denoising_strength || 0.75;
+      
+      if (isInpainting) {
+        requestBody.source_processing = "inpainting";
+        requestBody.source_mask = sourceMask;
+      } else {
+        requestBody.source_processing = "img2img";
+      }
+    }
+
     const resp = await fetch(`${BASE_API_URL}/generate/async`, {
       method: 'POST',
-      body: JSON.stringify({
-        ...imageParams,
-        params: {
-          sampler_name: imageParams.sampler,
-          cfg_scale: imageParams.guidance_scale || 7,
-          height: imageParams.height || 512,
-          width: imageParams.width || 512,
-          seed: imageParams.seed || "",
-          steps: imageParams.steps || 30,
-          karras: imageParams.karras || false,
-          hires_fix: imageParams.hires_fix || false,
-          clip_skip: imageParams.clipskip || 1,
-          tiling: imageParams.tiling || false,
-          post_processing: imageParams.post_processors || [],
-          n: imageParams.num_images || 1,
-          restore_faces: imageParams.restore_faces || false,
-        },
-        nsfw: imageParams.nsfw || false,
-        censor_nsfw: !imageParams.nsfw,
-        trusted_workers: true,
-        models: [imageParams.model],
-        r2: true,
-        shared: imageParams.publicView || false,
-      }),
+      body: JSON.stringify(requestBody),
       headers: {
         'Content-Type': 'application/json',
         'Client-Agent': ClientHeader,
