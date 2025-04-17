@@ -9,11 +9,14 @@ import { motion } from "framer-motion";
 import ImageCard from "@/components/misc-components/ImageCard";
 import { fetchUserGeneratedImages } from "@/app/_api/getUserGeneratedImages";
 import { ImageMetadataWithImages } from "@/types";
+import ImageDetailModal from "@/components/homepage-components/ImageDetailModal";
 
 const HistoryPage = ({ user }: { user: User | null }) => {
   const sentinelRef = useRef(null);
   const [search, setSearch] = useState("");
   const [value] = useDebounce(search, 300);
+  const [selectedImage, setSelectedImage] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery<
     ImageMetadataWithImages[],
@@ -32,6 +35,15 @@ const HistoryPage = ({ user }: { user: User | null }) => {
     },
     enabled: !!user,
   });
+
+  const handleImageClick = (image: any) => {
+    setSelectedImage(image);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
 
   // [M] Add log to inspect the fetched data structure
   console.log("React Query Data:", data);
@@ -91,8 +103,9 @@ const HistoryPage = ({ user }: { user: User | null }) => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.5 }}
+                  onClick={() => handleImageClick(photo)}
                 >
-                  <ImageCard item={photo} user={user?.id} />
+                  <ImageCard item={photo} user={user?.id} forModal={true} />
                 </motion.div>
               ))}
             </div>
@@ -104,6 +117,17 @@ const HistoryPage = ({ user }: { user: User | null }) => {
           )}
         </div>
       </div>
+      
+      {/* Image Detail Modal */}
+      {selectedImage && (
+        <ImageDetailModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          image={selectedImage}
+          isUserOwned={true}
+          currentUserId={user?.id}
+        />
+      )}
     </div>
   );
 };

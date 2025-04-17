@@ -805,15 +805,9 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <SliderWithCounter
                                       min={10}
                                       max={50}
-                                      onValueChange={(value: any) => {
-                                        if (Array.isArray(value)) {
-                                          field.onChange(value[0]);
-                                        } else {
-                                          field.onChange(value);
-                                        }
-                                      }}
                                       step={1}
-                                      value={[field.value]}
+                                      value={field.value}
+                                      onValueChange={field.onChange}
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -834,15 +828,9 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <SliderWithCounter
                                       min={1}
                                       max={20}
-                                      onValueChange={(value: any) => {
-                                        if (Array.isArray(value)) {
-                                          field.onChange(value[0]);
-                                        } else {
-                                          field.onChange(value);
-                                        }
-                                      }}
                                       step={0.5}
-                                      value={[field.value]}
+                                      value={field.value}
+                                      onValueChange={field.onChange}
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -863,15 +851,9 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <SliderWithCounter
                                       min={1}
                                       max={4}
-                                      onValueChange={(value: any) => {
-                                        if (Array.isArray(value)) {
-                                          field.onChange(value[0]);
-                                        } else {
-                                          field.onChange(value);
-                                        }
-                                      }}
                                       step={1}
-                                      value={[field.value]}
+                                      value={field.value}
+                                      onValueChange={field.onChange}
                                     />
                                   </FormControl>
                                   <FormMessage />

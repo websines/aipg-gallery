@@ -10,15 +10,20 @@ import {
   DialogClose
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, Share, Heart, ChevronLeft, ChevronRight, ImageIcon, Copy, Check, Sparkles, X } from 'lucide-react';
+import { Download, Share, Heart, ChevronLeft, ChevronRight, ImageIcon, Copy, Check, Sparkles, X, Trash } from 'lucide-react';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deleteUserImages } from '@/app/_api/deleteImage';
+import { LoadingSpinner } from '../misc-components/LoadingSpinner';
 
 interface ImageDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   image: any; // The main image to display
+  isUserOwned?: boolean; // Flag to indicate if image is owned by current user
+  currentUserId?: string; // Current user ID to check ownership
 }
 
 interface ImageData {
@@ -30,12 +35,30 @@ interface ImageData {
 const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   isOpen,
   onClose,
-  image
+  image,
+  isUserOwned = false,
+  currentUserId = ''
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [liked, setLiked] = useState(false);
   const [copied, setCopied] = useState(false);
+  
+  const queryClient = useQueryClient();
+  
+  const { mutate: deleteMutate, isPending: isDeleting } = useMutation({
+    mutationFn: () => deleteUserImages(image.id),
+    onSuccess: () => {
+      // Invalidate the query to refresh the history list
+      queryClient.invalidateQueries({ queryKey: ['usergeneratedImages'] });
+      toast.success('Image deleted successfully');
+      onClose(); // Close the modal after deletion
+    },
+    onError: (error) => {
+      console.error('Error deleting image:', error);
+      toast.error('Failed to delete image');
+    }
+  });
   
   useEffect(() => {
     // Reset to first image when modal opens
@@ -79,6 +102,9 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
         });
     }
   };
+  
+  // Determine if the current user is the owner of this image
+  const isOwner = isUserOwned || (currentUserId && image.user_id === currentUserId);
 
   if (!image || !image.image_data || image.image_data.length === 0) return null;
 
@@ -86,6 +112,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   const currentImage = images[currentImageIndex];
   const imageUrl = currentImage?.image_url;
   const isCloudflareUrl = imageUrl?.includes('r2.cloudflarestorage.com');
+  const isBase64 = imageUrl?.startsWith('data:image');
 
   const goToNextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -126,19 +153,12 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   transition={{ duration: 0.3 }}
                   className="w-full h-full flex items-center justify-center"
                 >
-                  {isCloudflareUrl ? (
-                    <img 
-                      src={imageUrl} 
-                      alt={image.positive_prompt || "AI generated image"}
-                      className="object-contain max-h-full max-w-full p-2 md:p-4"
-                    />
-                  ) : (
-                    <img 
-                      src={imageUrl} 
-                      alt={image.positive_prompt || "AI generated image"}
-                      className="object-contain max-h-full max-w-full p-2 md:p-4"
-                    />
-                  )}
+                  {/* Use simple img tag for all image types to ensure consistent display */}
+                  <img 
+                    src={imageUrl} 
+                    alt={image.positive_prompt || "AI generated image"}
+                    className="object-contain max-h-full max-w-full p-2 md:p-4"
+                  />
                 </motion.div>
               </AnimatePresence>
               
@@ -258,19 +278,12 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.97 }}
                   >
-                    {img.image_url?.includes('r2.cloudflarestorage.com') ? (
-                      <img 
-                        src={img.image_url} 
-                        alt={`Thumbnail ${index + 1}`}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <img 
-                        src={img.image_url} 
-                        alt={`Thumbnail ${index + 1}`}
-                        className="object-cover w-full h-full"
-                      />
-                    )}
+                    {/* Use simple img tag for thumbnails as well */}
+                    <img 
+                      src={img.image_url} 
+                      alt={`Thumbnail ${index + 1}`}
+                      className="object-cover w-full h-full"
+                    />
                     {index === currentImageIndex && (
                       <div className="absolute inset-0 bg-indigo-500/20 backdrop-blur-[1px]"></div>
                     )}
@@ -281,6 +294,28 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
           )}
           
           <div className="flex flex-wrap gap-2 md:gap-3 mt-4 md:mt-6 justify-end">
+            {/* Delete button - only visible if image is owned by user */}
+            {isOwner && (
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button 
+                  variant="destructive" 
+                  onClick={() => deleteMutate()}
+                  className="rounded-full px-3 md:px-5 py-1 h-8 md:h-10 text-xs md:text-sm flex items-center"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <div className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  ) : (
+                    <Trash className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
+                  )}
+                  Delete
+                </Button>
+              </motion.div>
+            )}
+            
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

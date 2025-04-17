@@ -49,25 +49,98 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
     api.on("reInit", onSelect);
   }, [api]);
 
+  // Helper function to check URL type
+  const getImageType = (url: string) => {
+    if (!url) return 'unknown';
+    if (url.startsWith('data:image')) return 'base64';
+    if (url.includes('cloudflarestorage.com')) return 'cloudflare';
+    if (url.startsWith('http')) return 'external';
+    return 'unknown';
+  };
+
   const imageKitLoader = ({ src, width, quality }: any) => {
-    // Extract the image filename from the full URL
-    const imageFilename = src.split("/").pop();
-
-    // Define the transformation parameters
-    const params = [`w-${width}`];
-    if (quality) {
-      params.push(`q-${quality}`);
+    // Skip ImageKit processing for specific URL types
+    const imageType = getImageType(src);
+    
+    // For base64 or unknown format, return the original source
+    if (imageType === 'base64' || imageType === 'unknown') {
+      return src;
     }
-    const paramsString = params.join(",");
-
-    // Construct the ImageKit URL
-    let urlEndpoint = "https://ik.imagekit.io/tkafllsgm";
-    if (urlEndpoint[urlEndpoint.length - 1] === "/") {
-      urlEndpoint = urlEndpoint.substring(0, urlEndpoint.length - 1);
+    
+    // For Cloudflare URLs, return as is
+    if (imageType === 'cloudflare') {
+      return src;
     }
 
-    // console.log(`${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`);
-    return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-jpg`;
+    try {
+      // For regular URLs, apply ImageKit transformation
+      // Extract the image filename from the full URL
+      const imageFilename = src.split("/").pop();
+      if (!imageFilename) return src;
+
+      // Define the transformation parameters
+      const params = [`w-${width}`];
+      if (quality) {
+        params.push(`q-${quality}`);
+      }
+      const paramsString = params.join(",");
+
+      // Construct the ImageKit URL
+      let urlEndpoint = "https://ik.imagekit.io/tkafllsgm";
+      if (urlEndpoint[urlEndpoint.length - 1] === "/") {
+        urlEndpoint = urlEndpoint.substring(0, urlEndpoint.length - 1);
+      }
+      return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-jpg`;
+    } catch (error) {
+      console.error("Error in imageKitLoader:", error);
+      return src; // Return original source if there's an error
+    }
+  };
+
+  // Function to render the appropriate image component based on type
+  const renderImage = (image: any, isThumb = false) => {
+    if (!image.image_url) {
+      return (
+        <div className={`w-full ${isThumb ? 'h-[75px]' : 'h-[400px]'} flex items-center justify-center bg-zinc-800`}>
+          <p className="text-zinc-400">Image not available</p>
+        </div>
+      );
+    }
+
+    const imageType = getImageType(image.image_url);
+    
+    if (imageType === 'base64') {
+      return (
+        <img
+          src={image.image_url}
+          className={`w-full ${isThumb ? 'h-[75px]' : 'h-auto'} object-cover`}
+          alt={image.seed || 'Generated image'}
+        />
+      );
+    } else {
+      return (
+        <Image
+          loader={imageKitLoader}
+          height={isThumb ? 75 : 400}
+          width={isThumb ? 75 : 400}
+          loading={isThumb ? "eager" : "lazy"}
+          src={image.image_url}
+          className={`w-full h-auto object-cover`}
+          alt={image.seed || 'Generated image'}
+          quality={isThumb ? 60 : 80}
+          sizes="100vw"
+          unoptimized={imageType === 'cloudflare'}
+        />
+      );
+    }
+  };
+
+  // Wrapper for toggleLike to handle event if present or not
+  const handleToggleLike = (e: React.MouseEvent | undefined) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    toggleLike();
   };
 
   return (
@@ -80,22 +153,12 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
           {images.map((image: any) => (
             <CarouselItem key={image.id}>
               <div className="p-0 bg-white relative">
-                <Image
-                  loader={imageKitLoader}
-                  height={400}
-                  width={400}
-                  loading="lazy"
-                  src={image.image_url}
-                  className="w-full h-auto object-cover"
-                  alt={image.seed}
-                  quality={80}
-                  sizes="100vw"
-                />
+                {renderImage(image)}
                 <DownloadBtnComponent photo={image} />
               </div>
               <div className="absolute hover:bg-black/50 border rounded-xl p-2 items-center top-5 right-5 bg-black/80">
                 {userID ? (
-                  <button onClick={toggleLike}>
+                  <button onClick={handleToggleLike}>
                     {isLiked ? (
                       <Heart className="w-6 h-6 fill-red-500" />
                     ) : (
@@ -131,15 +194,9 @@ const CarouselComponent = ({ images, userID, isLiked, toggleLike }: any) => {
               key={index}
               onClick={() => onThumbClick(index)}
             >
-              <Image
-                loader={imageKitLoader}
-                src={image.image_url}
-                height={75}
-                width={75}
-                className="w-[75px] h-[75px] object-cover rounded-lg"
-                alt={image.seed}
-                priority={true}
-              />
+              <div className="w-[75px] h-[75px] object-cover rounded-lg overflow-hidden">
+                {renderImage(image, true)}
+              </div>
             </div>
           ))}
         </CarouselContent>

@@ -11,7 +11,9 @@ import { deleteUserImages } from "@/app/_api/deleteImage";
 import CarouselComponent from "./CarouselComponent";
 import { LoadingSpinner } from "./LoadingSpinner";
 import Image from "next/image";
-const ImageCard = ({ item, user }: any) => {
+
+// Add forModal prop which controls whether the card should use its own dialog or be used with external modal
+const ImageCard = ({ item, user, forModal = false }: any) => {
   const { data: isLiked, refetch } = useQuery({
     queryKey: ["imageLikeStatus", item.id, user], // Unique query key
     queryFn: () => fetchLikedStatus(item.id, user),
@@ -30,65 +32,129 @@ const ImageCard = ({ item, user }: any) => {
     mutationFn: () => deleteUserImages(item.id),
   });
 
-  const toggleLike = (itemID: any, userID: any) => {
+  const toggleLike = (e: React.MouseEvent, itemID: any, userID: any) => {
+    e.stopPropagation();
     if (user) {
       likeMutate(userID, itemID);
     }
   };
 
-  const imageKitLoader = ({ src, width, quality }: any) => {
-    // Extract the image filename from the full URL
-    const imageFilename = src.split("/").pop();
-
-    // Define the transformation parameters
-    const params = [`w-${width}`];
-    if (quality) {
-      params.push(`q-${quality}`);
-    }
-    const paramsString = params.join(",");
-
-    // Construct the ImageKit URL
-    let urlEndpoint = "https://ik.imagekit.io/tkafllsgm";
-    if (urlEndpoint[urlEndpoint.length - 1] === "/") {
-      urlEndpoint = urlEndpoint.substring(0, urlEndpoint.length - 1);
-    }
-    return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`;
+  // Helper function to check URL type
+  const getImageType = (url: string) => {
+    if (!url) return 'unknown';
+    if (url.startsWith('data:image')) return 'base64';
+    if (url.includes('cloudflarestorage.com')) return 'cloudflare';
+    if (url.startsWith('http')) return 'external';
+    return 'unknown';
   };
 
+  const imageKitLoader = ({ src, width, quality }: any) => {
+    // Skip ImageKit processing for specific URL types
+    const imageType = getImageType(src);
+    
+    // For base64 or unknown format, return the original source
+    if (imageType === 'base64' || imageType === 'unknown') {
+      return src;
+    }
+    
+    // For Cloudflare URLs, return as is
+    if (imageType === 'cloudflare') {
+      return src;
+    }
+
+    try {
+      // For regular URLs, apply ImageKit transformation
+      // Extract the image filename from the full URL
+      const imageFilename = src.split("/").pop();
+      if (!imageFilename) return src;
+
+      // Define the transformation parameters
+      const params = [`w-${width}`];
+      if (quality) {
+        params.push(`q-${quality}`);
+      }
+      const paramsString = params.join(",");
+
+      // Construct the ImageKit URL
+      let urlEndpoint = "https://ik.imagekit.io/tkafllsgm";
+      if (urlEndpoint[urlEndpoint.length - 1] === "/") {
+        urlEndpoint = urlEndpoint.substring(0, urlEndpoint.length - 1);
+      }
+      return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`;
+    } catch (error) {
+      console.error("Error in imageKitLoader:", error);
+      return src; // Return original source if there's an error
+    }
+  };
+
+  // Check for valid image URL
+  const imageUrl = item.image_data?.[0]?.image_url;
+  const imageType = getImageType(imageUrl);
+  const hasValidImage = !!imageUrl;
+
+  // The thumbnail card content that's common between modal and dialog versions
+  const thumbnailCard = (
+    <div className="cursor-pointer relative rounded-sm overflow-hidden group bg-white">
+      {hasValidImage ? (
+        imageType === 'base64' ? (
+          // For base64 images, use standard img tag
+          <img
+            src={imageUrl}
+            className="w-full h-auto object-cover rounded-sm hover:scale-105 transition ease-in-out duration-200"
+            alt={item.positive_prompt}
+          />
+        ) : (
+          // For other URLs, use Next Image with loader
+          <Image
+            loader={imageKitLoader}
+            src={imageUrl}
+            height={0}
+            width={0}
+            loading="lazy"
+            className="w-full h-auto object-cover rounded-sm hover:scale-105 transition ease-in-out duration-200"
+            alt={item.positive_prompt}
+            quality={40}
+            layout="responsive"
+            unoptimized={imageType === 'cloudflare'}
+          />
+        )
+      ) : (
+        // Fallback for missing images
+        <div className="w-full h-64 flex items-center justify-center bg-zinc-800">
+          <p className="text-zinc-400">Image not available</p>
+        </div>
+      )}
+      {user && (
+        <button
+          onClick={(e) => toggleLike(e, item.id, user)}
+          className="absolute top-2 right-2 bg-gray-900 bg-opacity-70 p-1 rounded-full opacity-0 group-hover:opacity-100 outline-none"
+        >
+          {isLiked ? (
+            <Heart className="w-6 h-6 fill-red-500" />
+          ) : (
+            <Heart className="w-6 h-6" />
+          )}
+        </button>
+      )}
+      <div className="absolute bottom-0 left-0 right-0 bg-zinc-950 bg-opacity-45 p-2 text-white flex items-center justify-between transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+        <p className="truncate text-sm font-medium text-center">
+          {item.positive_prompt}
+        </p>
+      </div>
+    </div>
+  );
+
+  // If used with external modal, just return the card without dialog wrapper
+  if (forModal) {
+    return <div className="z-50">{thumbnailCard}</div>;
+  }
+
+  // Otherwise use the existing dialog implementation
   return (
     <div className="z-50">
       <Dialog key={item.id}>
         <DialogTrigger asChild>
-          <div className="cursor-pointer relative rounded-sm overflow-hidden group bg-white">
-            <Image
-              loader={imageKitLoader}
-              src={item.image_data[0]?.image_url}
-              height={0}
-              width={0}
-              loading="lazy"
-              className="w-full h-auto object-cover rounded-sm hover:scale-105 transition ease-in-out duration-200"
-              alt={item.positive_prompt}
-              quality={40}
-              layout="responsive"
-            />
-            {user && (
-              <button
-                onClick={() => toggleLike(item.id, user)}
-                className="absolute top-2 right-2 bg-gray-900 bg-opacity-70 p-1 rounded-full opacity-0 group-hover:opacity-100 outline-none"
-              >
-                {isLiked ? (
-                  <Heart className="w-6 h-6 fill-red-500" />
-                ) : (
-                  <Heart className="w-6 h-6" />
-                )}
-              </button>
-            )}
-            <div className="absolute bottom-0 left-0 right-0 bg-zinc-950 bg-opacity-45 p-2 text-white flex items-center justify-between transition-opacity duration-300 opacity-0 group-hover:opacity-100">
-              <p className="truncate text-sm font-medium text-center">
-                {item.positive_prompt}
-              </p>
-            </div>
-          </div>
+          {thumbnailCard}
         </DialogTrigger>
         <DialogContent className="md:min-w-[70%] overflow-y-scroll bg-transaprent max-h-[80vh] md:max-h-[95vh] no-scrollbar backdrop-blur-md">
           <div className="p-4 flex flex-col-reverse md:flex-row bg-transparent items-center justify-center gap-6 relative backdrop-blur-lg">
@@ -139,7 +205,7 @@ const ImageCard = ({ item, user }: any) => {
             <CarouselComponent
               images={item.image_data}
               isLiked={isLiked}
-              toggleLike={() => toggleLike(item.id, user)}
+              toggleLike={() => toggleLike(null as any, item.id, user)}
               userID={user}
             />
           </div>
