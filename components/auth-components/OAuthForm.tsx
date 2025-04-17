@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 import { toast } from "@/components/ui/use-toast";
+import { createSupabaseClient } from "@/lib/supabase/client";
 
 export default function OAuthForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,10 +11,12 @@ export default function OAuthForm() {
   const signInWithGoogle = async () => {
     try {
       setIsLoading(true);
+      const supabase = createSupabaseClient();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: false
         }
       });
       

@@ -163,8 +163,33 @@ export async function saveImageData(imageData: ImageDataInput): Promise<SaveResu
       console.warn("Saving base64 string directly to database. Consider using Cloudflare URL instead.");
       // Optionally truncate very long base64 strings to avoid database issues
     } else if (imageUrl.includes('cloudflarestorage.com')) {
-      // This is already a valid Cloudflare R2 URL, use it directly
-      console.log("Using Cloudflare R2 URL directly:", imageUrl);
+      // Convert the temporary Cloudflare R2 URL to a permanent images.aipg.art URL
+      console.log("Converting Cloudflare R2 URL to permanent URL");
+      
+      try {
+        // Extract the filename from the R2 URL
+        // Example: https://a9b7416008b496f49b0f021099cc4128.r2.cloudflarestorage.com/aipgcoregen/d95670ee-aa17-4690-9d70-ae3ad1197e0b.webp?X-Amz...
+        // We want: d95670ee-aa17-4690-9d70-ae3ad1197e0b.webp
+        
+        // Parse the URL
+        const url = new URL(imageUrl);
+        // Get the pathname
+        const pathname = url.pathname;
+        // Split by '/' and get the last part (the filename)
+        const pathParts = pathname.split('/');
+        const filename = pathParts[pathParts.length - 1];
+        
+        if (filename) {
+          // Construct the permanent URL
+          imageUrl = `https://images.aipg.art/${filename}`;
+          console.log("Converted to permanent URL:", imageUrl);
+        } else {
+          console.error("Failed to extract filename from R2 URL:", imageUrl);
+        }
+      } catch (err) {
+        console.error("Error converting R2 URL to permanent URL:", err);
+        // Continue with the original URL if conversion fails
+      }
     } else if (imageUrl.startsWith('http')) {
       // This is some other external URL
       console.log("Using external URL directly:", imageUrl);

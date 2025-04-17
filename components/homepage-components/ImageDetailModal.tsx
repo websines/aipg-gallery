@@ -181,22 +181,62 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   };
 
   const handleDownload = async (imageUrl: string) => {
+    if (!imageUrl) return;
+    
     try {
       setLoading(true);
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `image-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
+      let fileUrl = imageUrl;
+      let fileName = 'generated-image.png';
+      
+      // Handle base64 images
+      if (isBase64) {
+        const blob = await (await fetch(imageUrl)).blob();
+        fileUrl = URL.createObjectURL(blob);
+        fileName = 'generated-image.png';
+      } 
+      // Handle permanent URLs with filename
+      else if (imageUrl.includes('images.aipg.art')) {
+        // Get the filename from the URL
+        const parts = imageUrl.split('/');
+        const filename = parts[parts.length - 1];
+        if (filename) {
+          fileName = filename;
+        }
+      }
+      // Handle Cloudflare R2 URLs (temporary)
+      else if (imageUrl.includes('cloudflarestorage.com')) {
+        // Extract filename from the URL before the query params
+        const urlWithoutParams = imageUrl.split('?')[0];
+        const parts = urlWithoutParams.split('/');
+        const filename = parts[parts.length - 1];
+        if (filename) {
+          fileName = filename;
+        }
+      }
+      
+      // Create a download link
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      if (!isBase64) {
+        // No need to revoke for direct URLs
+        document.body.removeChild(link);
+      } else {
+        // For blob URLs, we need to revoke them after download
+        setTimeout(() => {
+          URL.revokeObjectURL(fileUrl);
+          document.body.removeChild(link);
+        }, 100);
+      }
+      
       toast.success('Image downloaded successfully');
     } catch (error) {
       console.error('Error downloading image:', error);
-      toast.error('Error downloading image');
+      toast.error('Failed to download image');
     } finally {
       setLoading(false);
     }
@@ -225,7 +265,6 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   const images = image.image_data as ImageData[];
   const currentImage = images[currentImageIndex];
   const imageUrl = currentImage?.image_url;
-  const isCloudflareUrl = imageUrl?.includes('r2.cloudflarestorage.com');
   const isBase64 = imageUrl?.startsWith('data:image');
 
   const goToNextImage = () => {
@@ -272,6 +311,11 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     src={imageUrl} 
                     alt={image.positive_prompt || "AI generated image"}
                     className="object-contain max-h-full max-w-full p-2 md:p-4"
+                    onError={(e) => {
+                      console.error("Image load error in modal:", e);
+                      // Fall back to a placeholder if the image fails to load
+                      e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23333'/%3E%3Ctext x='50' y='50' font-family='Arial' font-size='12' text-anchor='middle' fill='white' dominant-baseline='middle'%3EImage Error%3C/text%3E%3C/svg%3E";
+                    }}
                   />
                 </motion.div>
               </AnimatePresence>
@@ -397,6 +441,11 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                       src={img.image_url} 
                       alt={`Thumbnail ${index + 1}`}
                       className="object-cover w-full h-full"
+                      onError={(e) => {
+                        console.error("Thumbnail load error:", e);
+                        // Fall back to a placeholder if the thumbnail fails to load
+                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23333'/%3E%3Ctext x='50' y='50' font-family='Arial' font-size='12' text-anchor='middle' fill='white' dominant-baseline='middle'%3EImage Error%3C/text%3E%3C/svg%3E";
+                      }}
                     />
                     {index === currentImageIndex && (
                       <div className="absolute inset-0 bg-indigo-500/20 backdrop-blur-[1px]"></div>

@@ -180,21 +180,16 @@ export default function HomePage({ user }: HomePageProps) {
                         >
                           <div className="overflow-hidden">
                             {image.image_data && image.image_data.length > 0 ? (
-                              image.image_data[0].image_url.includes('r2.cloudflarestorage.com') ? (
-                                <img
-                                  src={image.image_data[0].image_url}
-                                  alt={image.positive_prompt || "AI generated image"}
-                                  className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-110"
-                                />
-                              ) : (
-                                <Image
-                                  src={image.image_data[0].image_url}
-                                  alt={image.positive_prompt || "AI generated image"}
-                                  width={500}
-                                  height={500}
-                                  className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-110"
-                                />
-                              )
+                              <img
+                                src={image.image_data[0].image_url}
+                                alt={image.positive_prompt || "AI generated image"}
+                                className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-110"
+                                onError={(e) => {
+                                  console.error("Image load error:", e);
+                                  // Fall back to a placeholder if the image fails to load
+                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23333'/%3E%3Ctext x='50' y='50' font-family='Arial' font-size='12' text-anchor='middle' fill='white' dominant-baseline='middle'%3EImage Error%3C/text%3E%3C/svg%3E";
+                                }}
+                              />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-zinc-800/50 backdrop-blur-sm">
                                 <p className="text-zinc-400">Image not available</p>
