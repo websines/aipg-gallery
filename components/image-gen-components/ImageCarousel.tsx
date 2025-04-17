@@ -27,7 +27,7 @@ import {
 } from "../ui/dialog";
 import useJobIdStore from "@/stores/jobIDStore";
 import { checkImageStatus } from "@/app/_api/checkImageStatus";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
 import { User } from "@supabase/supabase-js";
 
@@ -72,6 +72,8 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded, submittedMetadata }: Ima
   const [isComplete, setIsComplete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Add a ref to track if images have been saved for this job
+  const savedImagesRef = useRef<{[key: string]: boolean}>({});
 
   // Polling function to check image status
   const pollImageStatus = async () => {
@@ -95,16 +97,22 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded, submittedMetadata }: Ima
             onImagesLoaded(successResult.images);
           }
           
+          // Check if we already saved images for this job
+          const alreadySaved = savedImagesRef.current[jobId];
+          
           // [M] Add logging to check why save might be skipped
           console.log("Polling success: Checking conditions for save...", {
             userId: userId,
             submittedMetadata: submittedMetadata,
-            shouldSave: !!(userId && submittedMetadata)
+            shouldSave: !!(userId && submittedMetadata),
+            alreadySaved: alreadySaved
           });
 
-          // Save images if user is logged in
-          if (userId && submittedMetadata) {
+          // Save images if user is logged in and we haven't saved for this job yet
+          if (userId && submittedMetadata && !alreadySaved) {
             await saveImagesToDatabase(successResult.images);
+            // Mark this job as saved
+            savedImagesRef.current[jobId] = true;
           }
         }
       } else {
@@ -127,6 +135,12 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded, submittedMetadata }: Ima
 
     if (!userId || !submittedMetadata || images.length === 0) {
       console.log("Skipping save: Missing userId, submittedMetadata, or images", { userId, submittedMetadata, images });
+      return;
+    }
+    
+    // Check if we already saved these images
+    if (savedImagesRef.current[jobId]) {
+      console.log("Skipping save: Images for this job have already been saved", { jobId });
       return;
     }
     
@@ -186,6 +200,9 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded, submittedMetadata }: Ima
           description: "Images saved to your gallery!",
         });
       }
+      
+      // Mark this job as saved
+      savedImagesRef.current[jobId] = true;
     } catch (error) {
       console.error("Error saving images:", error);
       setSaveError("Failed to save images to your gallery. Please try again later.");
@@ -199,9 +216,10 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded, submittedMetadata }: Ima
     }
   };
 
-  // Start polling when component mounts
+  // Start polling when component mounts or jobId changes
+  // But ensure we only poll once for each jobId
   useEffect(() => {
-    if (jobId) {
+    if (jobId && !savedImagesRef.current[jobId]) {
       pollImageStatus();
     }
   }, [jobId]);
