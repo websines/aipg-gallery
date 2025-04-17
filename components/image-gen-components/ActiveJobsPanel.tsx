@@ -92,7 +92,7 @@ const ActiveJobsPanel: React.FC<ActiveJobsPanelProps> = ({ onJobComplete }) => {
       if (isCompleted) {
         const result = await getFinishedImage(jobId);
         
-        if (result.success && result.images) {
+        if (result.success && 'images' in result) {
           // If we have a callback, use it
           if (onJobComplete) {
             onJobComplete(result.images);
@@ -109,15 +109,23 @@ const ActiveJobsPanel: React.FC<ActiveJobsPanelProps> = ({ onJobComplete }) => {
         } else {
           toast({
             title: "Error",
-            description: result.error || "Failed to load images. Please try again.",
+            description: 'message' in result ? result.message : "Failed to load images. Please try again.",
             variant: "destructive",
           });
         }
         return;
       }
       
-      // For active jobs, continue with the existing logic
-      const result = await getFinishedImage(jobId, userData.id);
+      // For active jobs, we need to check the status
+      // First, get the job from our active jobs list
+      const activeJob = activeJobs.find(job => job.job_id === jobId);
+      
+      // Only pass userId if the job is not in a final state
+      // to prevent triggering another API request for completed jobs
+      const result = await getFinishedImage(
+        jobId, 
+        activeJob && ['pending', 'processing'].includes(activeJob.status) ? userData.id : undefined
+      );
       
       if (result.success && 'generations' in result) {
         // Job is complete, refresh the job list
@@ -125,11 +133,11 @@ const ActiveJobsPanel: React.FC<ActiveJobsPanelProps> = ({ onJobComplete }) => {
         
         // Notify parent component if callback provided
         if (onJobComplete && result.generations) {
-          onJobComplete(result.generations);
+          onJobComplete(result.generations as GeneratedImage[]);
         }
-      } else if (result.status === 'RATE_LIMITED') {
+      } else if (!result.success && 'status' in result && result.status === 'RATE_LIMITED') {
         // Handle rate limiting
-        const retryAfter = result.retryAfter || 60;
+        const retryAfter = 'retryAfter' in result ? (result.retryAfter as number) : 60;
         setRateLimited(true);
         setRateLimitTimer(retryAfter);
         
@@ -138,7 +146,7 @@ const ActiveJobsPanel: React.FC<ActiveJobsPanelProps> = ({ onJobComplete }) => {
           description: `API rate limit reached. Please wait ${retryAfter} seconds.`,
           variant: "destructive",
         });
-      } else if (result.status === 'PROCESSING') {
+      } else if (!result.success && 'status' in result && result.status === 'PROCESSING') {
         // Job is still processing, update the job list with wait time info
         const updatedJobs = activeJobs.map(job => {
           if (job.job_id === jobId) {
@@ -146,8 +154,8 @@ const ActiveJobsPanel: React.FC<ActiveJobsPanelProps> = ({ onJobComplete }) => {
               ...job,
               result: {
                 ...job.result,
-                wait_time: result.waitTime || 0,
-                queue_position: result.queuePosition || 0
+                wait_time: 'waitTime' in result ? result.waitTime : 0,
+                queue_position: 'queuePosition' in result ? result.queuePosition : 0
               }
             };
           }
@@ -158,7 +166,7 @@ const ActiveJobsPanel: React.FC<ActiveJobsPanelProps> = ({ onJobComplete }) => {
         
         toast({
           title: "Job Status",
-          description: `Your image is still processing. ${result.waitTime ? `Estimated wait: ~${result.waitTime}s` : ''}`,
+          description: `Your image is still processing. ${('waitTime' in result && result.waitTime) ? `Estimated wait: ~${result.waitTime}s` : ''}`,
         });
       }
     } catch (error) {

@@ -7,7 +7,7 @@ export async function likeorUnlikeImages(userId: string | undefined, metadataId:
           .from('image_likes')
           .select('id')
           .eq('user_id', userId)
-          .eq('image_metadata_id', metadataId);
+          .eq('metadata_id', metadataId);
   
         if (error) {
           // Handle error
@@ -21,7 +21,7 @@ export async function likeorUnlikeImages(userId: string | undefined, metadataId:
             // Like
             await supabase.from('image_likes').insert({ 
               user_id: userId, 
-              image_metadata_id: metadataId 
+              metadata_id: metadataId 
             });
           }
         }
@@ -37,7 +37,7 @@ export async function fetchLikedStatus(imageMetadataId: string | undefined, user
         .from('image_likes')
         .select('id')
         .eq('user_id', userId)
-        .eq('image_metadata_id', imageMetadataId);
+        .eq('metadata_id', imageMetadataId);
   
       if (error) {
         throw error; // Allow React Query to handle errors

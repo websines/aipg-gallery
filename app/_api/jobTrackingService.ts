@@ -5,7 +5,8 @@ import { GeneratedImage } from '@/types';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-const createSupabaseClient = () => createClient(supabaseUrl, supabaseAnonKey);
+// Create a single Supabase client instance
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
 
@@ -23,66 +24,84 @@ export interface JobData {
  * Create a new job tracking record
  */
 export const createJobTracking = async (jobData: JobData) => {
-  const supabase = createSupabaseClient();
-  
   try {
+    console.log(`Attempting to create job tracking for job ID: ${jobData.jobId}, User ID: ${jobData.userId}`);
     // First check if the job already exists to avoid duplicates
-    const { data: existingJob } = await supabase
+    const { data: existingJob, error: checkError } = await supabase
       .from('job_tracking')
       .select('job_id')
       .eq('job_id', jobData.jobId)
       .maybeSingle();
+    
+    if (checkError) {
+      console.error(`Error checking for existing job ${jobData.jobId}:`, checkError);
+      // Decide if we should return error or attempt insert anyway? For now, let's return.
+      return { success: false, error: checkError };
+    }
     
     if (existingJob) {
       console.log(`Job ${jobData.jobId} already exists, skipping creation`);
       return { success: true, data: existingJob };
     }
     
-    // Insert the new job with RLS bypass if needed
+    // Prepare data for insertion
+    const insertData = {
+      job_id: jobData.jobId,
+      user_id: jobData.userId,
+      status: jobData.status,
+      prompt: jobData.prompt,
+      model: jobData.model,
+      params: jobData.params
+    };
+    
+    console.log(`Inserting job tracking data for ${jobData.jobId}:`, JSON.stringify(insertData));
+    
+    // Insert the new job
     const { data, error } = await supabase
       .from('job_tracking')
-      .insert({
-        job_id: jobData.jobId,
-        user_id: jobData.userId,
-        status: jobData.status,
-        prompt: jobData.prompt,
-        model: jobData.model,
-        params: jobData.params
-      })
+      .insert(insertData)
       .select()
       .maybeSingle();
     
     if (error) {
-      console.error('Error creating job tracking:', error);
+      console.error(`Error inserting job tracking for ${jobData.jobId}:`, error);
       
       // If we get an RLS error, try a different approach
       if (error.code === 'PGRST301' || error.message.includes('policy')) {
         console.log('Attempting alternative approach due to RLS policy...');
         
+        const minimalInsertData = {
+          job_id: jobData.jobId,
+          user_id: jobData.userId,
+          status: jobData.status
+        };
+        
+        console.log(`Inserting minimal job tracking data for ${jobData.jobId}:`, JSON.stringify(minimalInsertData));
+        
         // Try again with minimal data
         const { data: minimalData, error: minimalError } = await supabase
           .from('job_tracking')
-          .insert({
-            job_id: jobData.jobId,
-            user_id: jobData.userId,
-            status: jobData.status
-          })
+          .insert(minimalInsertData)
           .select()
           .maybeSingle();
           
         if (minimalError) {
+          console.error(`Error inserting minimal job tracking for ${jobData.jobId}:`, minimalError);
           return { success: false, error: minimalError };
         }
         
+        console.log(`Minimal job tracking inserted successfully for ${jobData.jobId}`);
         return { success: true, data: minimalData };
       }
       
+      // Return the original error if it wasn't RLS-related
       return { success: false, error };
     }
     
+    console.log(`Job tracking inserted successfully for ${jobData.jobId}`);
     return { success: true, data };
   } catch (error) {
-    console.error('Exception creating job tracking:', error);
+    console.error(`Exception creating job tracking for ${jobData.jobId}:`, error);
     return { success: false, error };
   }
 };
@@ -91,8 +110,6 @@ export const createJobTracking = async (jobData: JobData) => {
  * Update job status
  */
 export const updateJobStatus = async (jobId: string, status: JobStatus, resultData?: any) => {
-  const supabase = createSupabaseClient();
-  
   try {
     const updateData: any = { status };
     
@@ -109,7 +126,7 @@ export const updateJobStatus = async (jobId: string, status: JobStatus, resultDa
       .update(updateData)
       .eq('job_id', jobId)
       .select()
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error updating job status:', error);
@@ -127,8 +144,6 @@ export const updateJobStatus = async (jobId: string, status: JobStatus, resultDa
  * Get all active jobs for a user
  */
 export const getUserActiveJobs = async (userId: string) => {
-  const supabase = createSupabaseClient();
-  
   try {
     const { data, error } = await supabase
       .from('job_tracking')
@@ -153,8 +168,6 @@ export const getUserActiveJobs = async (userId: string) => {
  * Get job details by job ID
  */
 export const getJobById = async (jobId: string) => {
-  const supabase = createSupabaseClient();
-  
   try {
     // Use maybeSingle instead of single to avoid error when no rows are found
     const { data, error } = await supabase
@@ -184,8 +197,6 @@ export const getJobById = async (jobId: string) => {
  * Get the most recent completed jobs for a user
  */
 export const getUserCompletedJobs = async (userId: string, limit = 10) => {
-  const supabase = createSupabaseClient();
-  
   try {
     const { data, error } = await supabase
       .from('job_tracking')
@@ -211,8 +222,6 @@ export const getUserCompletedJobs = async (userId: string, limit = 10) => {
  * Clean up old jobs (can be called periodically)
  */
 export const cleanupOldJobs = async (daysToKeep = 7) => {
-  const supabase = createSupabaseClient();
-  
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);

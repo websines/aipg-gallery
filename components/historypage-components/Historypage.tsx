@@ -1,6 +1,6 @@
 "use client";
 import HistorySearch from "@/components/historypage-components/search-bar";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, InfiniteData } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useDebounce } from "use-debounce";
 import { LoadingSpinner } from "@/components/misc-components/LoadingSpinner";
@@ -8,24 +8,35 @@ import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 import ImageCard from "@/components/misc-components/ImageCard";
 import { fetchUserGeneratedImages } from "@/app/_api/getUserGeneratedImages";
+import { ImageMetadataWithImages } from "@/types";
 
 const HistoryPage = ({ user }: { user: User | null }) => {
   const sentinelRef = useRef(null);
   const [search, setSearch] = useState("");
   const [value] = useDebounce(search, 300);
 
-  const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery({
+  const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery<
+    ImageMetadataWithImages[],
+    Error,
+    InfiniteData<ImageMetadataWithImages[]>,
+    (string | undefined)[],
+    number
+  >({
     queryKey: ["usergeneratedImages", value, user?.id],
     queryFn: ({ pageParam = 1 }) =>
-      fetchUserGeneratedImages(user?.id, pageParam as number, value),
+      fetchUserGeneratedImages(user?.id, pageParam, value),
+    initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.length === 0) return undefined;
+      if (!lastPage || lastPage.length === 0) return undefined;
       return allPages.length + 1;
     },
     enabled: !!user,
   });
 
-  const photos = data?.pages.flat() || [];
+  // [M] Add log to inspect the fetched data structure
+  console.log("React Query Data:", data);
+
+  const photos = data?.pages.flatMap(page => page) || [];
 
   useEffect(() => {
     const observer = new IntersectionObserver(

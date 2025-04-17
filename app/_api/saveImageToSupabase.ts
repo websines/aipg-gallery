@@ -65,18 +65,52 @@ export async function saveMetadata(metadata: MetadataInput): Promise<SaveResult>
 
 async function uploadImage(file: Blob, metadataId: string): Promise<SaveResult> {
   try {
+    // Generate a unique filename
     const fileName = `${uuidv4()}.png`;
     const filePath = `${metadataId}/${fileName}`;
     
+    console.log(`Uploading image to storage path: ${filePath}`);
+    
+    // Check if Blob is valid
+    if (!file || file.size === 0) {
+      console.error("Invalid blob provided for upload");
+      return { success: false, error: "Invalid blob provided for upload" };
+    }
+    
+    // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from('images')
       .upload(filePath, file, {
         contentType: 'image/png',
+        cacheControl: '3600',
+        upsert: false
       });
       
     if (error) {
       console.error("Error uploading image to storage:", error);
+      
+      // Check if bucket exists
+      if (error.message.includes("bucket") || error.message.includes("not found")) {
+        return { 
+          success: false, 
+          error: "Storage bucket not found or not accessible. Please check your storage configuration." 
+        };
+      }
+      
+      // Check for permission issues
+      if (error.message.includes("permission") || error.message.includes("not authorized")) {
+        return { 
+          success: false, 
+          error: "Storage permission denied. Please check your storage bucket RLS policies." 
+        };
+      }
+      
       return { success: false, error: error.message };
+    }
+    
+    if (!data) {
+      console.error("No data returned from storage upload");
+      return { success: false, error: "Upload failed - no data returned" };
     }
     
     // Get public URL for the uploaded image
@@ -84,6 +118,12 @@ async function uploadImage(file: Blob, metadataId: string): Promise<SaveResult> 
       .from('images')
       .getPublicUrl(filePath);
       
+    if (!publicUrlData || !publicUrlData.publicUrl) {
+      console.error("Failed to get public URL for uploaded image");
+      return { success: false, error: "Failed to get public URL" };
+    }
+    
+    console.log("Image uploaded successfully with URL:", publicUrlData.publicUrl);
     return { success: true, id: publicUrlData.publicUrl };
   } catch (error) {
     console.error("Exception in uploadImage:", error);
@@ -93,7 +133,15 @@ async function uploadImage(file: Blob, metadataId: string): Promise<SaveResult> 
 
 export async function saveImageData(imageData: ImageDataInput): Promise<SaveResult> {
   try {
-    console.log("saveImageData called with:", { imageData });
+    console.log("saveImageData called with:", { 
+      metadata_id: imageData.metadata_id,
+      seed: imageData.seed,
+      image_url_type: typeof imageData.image_url,
+      image_url_length: typeof imageData.image_url === 'string' ? imageData.image_url.length : 0,
+      is_base64: typeof imageData.image_url === 'string' && 
+                (imageData.image_url.startsWith('data:image') || 
+                 imageData.image_url.startsWith('data:application'))
+    });
     
     if (!imageData.metadata_id) {
       console.error("No metadata ID provided to saveImageData");
@@ -107,31 +155,23 @@ export async function saveImageData(imageData: ImageDataInput): Promise<SaveResu
     
     let imageUrl = imageData.image_url;
     
-    // Check if the image is a base64 string
+    // Check if the image is a base64 string - we don't upload these anymore
     if (imageUrl.startsWith('data:image') || imageUrl.startsWith('data:application')) {
-      console.log("Converting base64 to blob for upload");
-      try {
-        // Extract the base64 part if it's a data URL
-        const base64Data = imageUrl.split(',')[1] || imageUrl;
-        const blob = await base64toBlob(base64Data, 'image/png');
-        
-        // Upload the blob to Supabase storage
-        const uploadResult = await uploadImage(blob, imageData.metadata_id);
-        
-        if (!uploadResult.success) {
-          return uploadResult;
-        }
-        
-        // Update the imageUrl to the new storage URL
-        imageUrl = uploadResult.id || '';
-      } catch (error) {
-        console.error("Error processing base64 image:", error);
-        return { success: false, error: "Failed to process base64 image" };
-      }
+      console.log("Base64 image detected - not uploading to storage");
+      // Since we're not uploading to Supabase anymore, just use the base64 image directly
+      // or return an error if you don't want to store base64 data in the database
+      console.warn("Saving base64 string directly to database. Consider using Cloudflare URL instead.");
+      // Optionally truncate very long base64 strings to avoid database issues
     } else if (imageUrl.includes('cloudflarestorage.com')) {
       // This is already a valid Cloudflare R2 URL, use it directly
       console.log("Using Cloudflare R2 URL directly:", imageUrl);
-      // No need to upload to Supabase storage in this case
+    } else if (imageUrl.startsWith('http')) {
+      // This is some other external URL
+      console.log("Using external URL directly:", imageUrl);
+    } else {
+      // Not a valid URL format
+      console.error("Invalid image URL format:", imageUrl.substring(0, 50) + "...");
+      return { success: false, error: "Invalid image URL format" };
     }
     
     // Save the image data to the database

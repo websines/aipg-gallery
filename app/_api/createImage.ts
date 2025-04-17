@@ -153,7 +153,10 @@ export const createImage = async (
       try {
         // Extract the prompt from the image parameters
         const prompt = imageParams.prompt || '';
-        const model = imageParams.params?.model || '';
+        // Use the correct model value from the input details
+        const model = imageParams.model || '';
+        // Use the params object built for the API request
+        const apiParams = requestBody.params || {}; 
         
         // Create job tracking record
         await createJobTracking({
@@ -161,14 +164,23 @@ export const createImage = async (
           userId,
           status: 'pending',
           prompt,
-          model,
-          params: imageParams.params || {}
+          model, // Pass the correct model
+          params: apiParams // Pass the correct params object
         });
         
         console.log(`Job tracking created for job ID: ${id}`);
       } catch (trackingError) {
         console.error('Error creating job tracking:', trackingError);
-        // We don't want to fail the request if tracking fails
+        // Return an error instead of proceeding
+        let errorMessage = 'Failed to save job details locally. Please try again.';
+        if (trackingError instanceof Error) {
+          errorMessage = `Failed to save job details locally: ${trackingError.message}`;
+        }
+        return {
+          success: false,
+          status: 'TRACKING_ERROR',
+          message: errorMessage,
+        };
       }
     }
 

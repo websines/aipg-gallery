@@ -38,18 +38,32 @@ import { Info } from "lucide-react";
 import { useToast } from "../ui/use-toast";
 import { Button } from "../ui/button";
 import { GeneratedImage } from "@/types";
+import { LoadingSpinner } from "../misc-components/LoadingSpinner";
+import { FinishedImageResponse, FinishedImageResponseError } from "@/types";
+
+// [M] Define a simpler type for the passed metadata
+interface SubmittedMetadata {
+  positivePrompt: string;
+  negativePrompt?: string;
+  sampler: string;
+  model: string;
+  guidance: number;
+  publicView: boolean;
+}
 
 interface ImageCarouselProps {
   jobId: string;
   userId?: string;
   onImagesLoaded?: (images: GeneratedImage[]) => void;
+  submittedMetadata: SubmittedMetadata | null; // [M] Use the simpler type
 }
 
-const ImageCarousel = ({ jobId, userId, onImagesLoaded }: ImageCarouselProps) => {
+const ImageCarousel = ({ jobId, userId, onImagesLoaded, submittedMetadata }: ImageCarouselProps) => {
   const { toast } = useToast();
-  const metadata = useImageMetadataStore((state) => state.metadata);
-  const resetMetadata = useImageMetadataStore((state) => state.resetMetadata);
-  const addImg = useImageMetadataStore((state) => state.addImage);
+  // [M] Remove store usage as metadata comes from props
+  // const metadata = useImageMetadataStore((state) => state.metadata);
+  // const resetMetadata = useImageMetadataStore((state) => state.resetMetadata);
+  // const addImg = useImageMetadataStore((state) => state.addImage);
 
   const [images, setImages] = useState<any>(null);
   const [finalImages, setFinalImages] = useState<any>(null);
@@ -65,21 +79,33 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded }: ImageCarouselProps) =>
 
     setIsPolling(true);
     try {
-      const result = await getFinishedImage(jobId, userId);
+      // [M] Assert result type for success case
+      const result: FinishedImageResponse | FinishedImageResponseError = await getFinishedImage(jobId, userId);
       
-      if (result.success && result.images) {
-        // We have our images
-        setGeneratedImages(result.images);
-        setIsComplete(true);
-        
-        // Notify parent component if callback provided
-        if (onImagesLoaded) {
-          onImagesLoaded(result.images);
-        }
-        
-        // Save images if user is logged in
-        if (userId && metadata) {
-          await saveImagesToDatabase(result.images);
+      if (result.success) {
+        // [M] Type assertion needed here as TS doesn't narrow the union type effectively
+        const successResult = result as FinishedImageResponse;
+        if (successResult.images) {
+          // We have our images
+          setGeneratedImages(successResult.images);
+          setIsComplete(true);
+          
+          // Notify parent component if callback provided
+          if (onImagesLoaded) {
+            onImagesLoaded(successResult.images);
+          }
+          
+          // [M] Add logging to check why save might be skipped
+          console.log("Polling success: Checking conditions for save...", {
+            userId: userId,
+            submittedMetadata: submittedMetadata,
+            shouldSave: !!(userId && submittedMetadata)
+          });
+
+          // Save images if user is logged in
+          if (userId && submittedMetadata) {
+            await saveImagesToDatabase(successResult.images);
+          }
         }
       } else {
         // If still processing, continue polling
@@ -96,20 +122,27 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded }: ImageCarouselProps) =>
 
   // Save images to database
   const saveImagesToDatabase = async (images: GeneratedImage[]) => {
-    if (!userId || !metadata || images.length === 0) return;
+    // [M] Add log to track entry into this function
+    console.log("Entering saveImagesToDatabase for job:", jobId, "with metadata:", submittedMetadata);
+
+    if (!userId || !submittedMetadata || images.length === 0) {
+      console.log("Skipping save: Missing userId, submittedMetadata, or images", { userId, submittedMetadata, images });
+      return;
+    }
     
     setIsSaving(true);
     setSaveError(null);
     
     try {
-      // First save metadata
+      // First save metadata using the passed prop
+      console.log("Saving metadata with submitted prop:", submittedMetadata);
       const metadataResult = await saveMetadata({
-        positive_prompt: metadata.positivePrompt,
-        negative_prompt: metadata.negativePrompt || "",
-        sampler: metadata.sampler,
-        model: metadata.model,
-        guidance: metadata.guidance,
-        public_view: metadata.publicView,
+        positive_prompt: submittedMetadata.positivePrompt,
+        negative_prompt: submittedMetadata.negativePrompt || "",
+        sampler: submittedMetadata.sampler,
+        model: submittedMetadata.model,
+        guidance: submittedMetadata.guidance,
+        public_view: submittedMetadata.publicView,
         user_id: userId,
       });
       
@@ -119,6 +152,11 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded }: ImageCarouselProps) =>
       
       const metadataId = metadataResult.id;
       
+      // [M] Add check for metadataId before proceeding
+      if (!metadataId) {
+        throw new Error("No metadata ID returned after saving metadata");
+      }
+      
       // Then save each image
       const savePromises = images.map(async (image) => {
         const imageUrl = image.img_url || image.base64String;
@@ -126,7 +164,9 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded }: ImageCarouselProps) =>
         
         return saveImageData({
           image_url: imageUrl,
-          seed: image.seed || "",
+          // [M] Ensure seed is converted to string
+          seed: image.seed ? String(image.seed) : "", 
+          // [M] metadataId is guaranteed to be string here due to check above
           metadata_id: metadataId,
         });
       });
@@ -174,9 +214,9 @@ const ImageCarousel = ({ jobId, userId, onImagesLoaded }: ImageCarouselProps) =>
     <div className="w-full">
       {isPolling && !isComplete && (
         <div className="flex flex-col items-center justify-center py-10">
-          <Loading text="Generating your images..." />
+          <LoadingSpinner />
           <p className="text-sm text-zinc-400 mt-4">
-            This may take a moment. Please don't refresh the page.
+            Generating your images... This may take a moment. Please don't refresh the page.
           </p>
         </div>
       )}

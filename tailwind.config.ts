@@ -78,6 +78,10 @@ const config = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "spin-slow": "spin 3s linear infinite",
+      },
+      boxShadow: {
+        glow: "0 0 5px 0 rgba(255, 255, 255, 0.4)",
       },
     },
   },

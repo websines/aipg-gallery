@@ -248,7 +248,7 @@ export interface IArtBotImageDetails {
   }
 
   export interface FormSchema {
-    postivePrompt: string;
+    positivePrompt: string;
     negativePrompt: string | undefined;
     seed: string;
     sampler: string;
@@ -282,3 +282,36 @@ export interface IArtBotImageDetails {
     multiKarras: boolean;
     multiControlType: boolean;
   }
+
+// [S] Add types for Supabase data fetching
+export interface ImageDataBase {
+  id: string;
+  image_url: string;
+  seed?: string | null;
+}
+
+export interface ImageMetadataWithImages {
+  id: string;
+  user_id: string;
+  positive_prompt: string;
+  negative_prompt?: string | null;
+  sampler?: string | null;
+  model?: string | null;
+  guidance?: number | null;
+  public_view?: boolean | null;
+  created_at: string;
+  image_data: ImageDataBase[]; // Array of related images
+}
+
+// [S] Define types for ImageMetadata and ImageData tables if needed elsewhere
+export interface ImageMetadata {
+  id: string;
+  user_id: string;
+  positive_prompt: string;
+  negative_prompt?: string | null;
+  sampler?: string | null;
+  model?: string | null;
+  guidance?: number | null;
+  public_view?: boolean | null;
+  created_at: string;
+}

@@ -16,7 +16,7 @@ export const isValidHttpUrl = (string: string = '') => {
   ): any => {
     // Common parameters for all generation types
     const transformedData: any = {
-      prompt: data.postivePrompt,
+      prompt: data.positivePrompt,
       negative: data.negativePrompt || "",
       params: {
         sampler_name: data.sampler,

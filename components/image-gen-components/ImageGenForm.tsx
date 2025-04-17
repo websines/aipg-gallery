@@ -58,13 +58,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
 import { saveImageData, saveMetadata } from "@/app/_api/saveImageToSupabase";
-import { Eye, Save } from "lucide-react";
+import { Eye, Save, Sparkles, Badge, Settings, Sliders, Rocket, GalleryHorizontal, PenTool, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import ImageUploader from "./ImageUploader";
 import MaskCanvas from "./MaskCanvas";
 import { blobToBase64 } from "@/utils/imageUtils";
 import { isBase64UrlImage, base64toBlob, dataUrlToFile } from "@/utils/imageUtils";
 import { FormSchema } from "@/types";
+import { AnimatePresence, motion } from "framer-motion";
 
 const optionSchema = z.object({
   label: z.string(),
@@ -74,7 +75,7 @@ const optionSchema = z.object({
 
 // Form schema for validation
 const formSchema = z.object({
-  postivePrompt: z.string().min(2, {
+  positivePrompt: z.string().min(2, {
     message: "Prompt must be at least 2 characters.",
   }),
   negativePrompt: z.string().optional(),
@@ -150,6 +151,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
   const { toast } = useToast();
   const [generationHistory, setGenerationHistory] = useState<string[]>([]);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
+  const [submittedFormData, setSubmittedFormData] = useState<z.infer<typeof formSchema> | null>(null);
   // Source image states for image-to-image and inpainting
   const [sourceImageFile, setSourceImageFile] = useState<File | null>(null);
   const [sourceImagePreview, setSourceImagePreview] = useState<string | null>(null);
@@ -171,11 +173,11 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      postivePrompt: "",
+      positivePrompt: "",
       negativePrompt: "",
       seed: "",
       sampler: "k_lms",
-      batchSize: 1,
+      batchSize: 4,
       steps: 15,
       width: 512,
       height: 512,
@@ -230,11 +232,11 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
 
   const resetForm = () => {
     form.reset({
-      postivePrompt: "",
+      positivePrompt: "",
       negativePrompt: "",
       seed: "",
       sampler: "k_lms",
-      batchSize: 1,
+      batchSize: 4,
       steps: 15,
       width: 512,
       height: 512,
@@ -306,7 +308,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
 
       // Set metadata for the image
       setMetadata({
-        positivePrompt: data.postivePrompt,
+        positivePrompt: data.positivePrompt,
         negativePrompt: data.negativePrompt || "",
         sampler: data.sampler,
         model: data.model,
@@ -359,13 +361,17 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
 
       if (response.jobId) {
         const jobId = response.jobId;
+        setSubmittedFormData(data);
         setJob(jobId);
-        startPollingJobStatus(jobId);
         toast({
           title: "Success",
           description: "Image generation started. Please wait...",
         });
       }
+
+      // Save the submitted prompt to history
+      const promptKey = `prompt_${Date.now()}`;
+      localStorage.setItem(promptKey, JSON.stringify(data));
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -376,133 +382,8 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
     }
   };
 
-  // Handle completed jobs from the ActiveJobsPanel
-  const handleJobCompleted = (images: GeneratedImage[]) => {
-    if (!images || images.length === 0) {
-      console.warn("Job completed but no valid images were returned");
-      return;
-    }
-    
-    console.log(`Job completed with images:`, images);
-    
-    setGeneratedImages(prev => [...images, ...prev]);
-    
-    // Save images to database if user is logged in
-    if (user && form.getValues()) {
-      const formData = form.getValues();
-      saveImagesToDatabase(images, formData);
-    }
-    
-    setGenerateDisable(false);
-  };
-
-  // Save images to database
-  const saveImagesToDatabase = async (images: GeneratedImage[], formData: any) => {
-    if (!user || images.length === 0) return;
-    
-    try {
-      // Check if these images have already been saved
-      // We'll use the first image's seed as a reference
-      if (images[0].saved === true) {
-        console.log("Images already saved, skipping");
-        return;
-      }
-      
-      // First save metadata
-      const metadataResult = await saveMetadata({
-        positive_prompt: formData.postivePrompt,
-        negative_prompt: formData.negativePrompt || "",
-        sampler: formData.sampler,
-        model: formData.model,
-        guidance: formData.guidance,
-        public_view: formData.publicView,
-        user_id: user.id,
-      });
-      
-      if (!metadataResult.success) {
-        throw new Error("Failed to save metadata");
-      }
-      
-      const metadataId = metadataResult.id;
-      
-      // Then save each image
-      const savePromises = images.map(async (image) => {
-        const imageUrl = image.img_url || image.base64String;
-        if (!imageUrl) return null;
-        
-        // Mark the image as saved to prevent duplicate saving
-        // @ts-ignore
-        image.saved = true;
-        
-        return saveImageData({
-          image_url: imageUrl,
-          seed: image.seed?.toString() || "",
-          metadata_id: metadataId || "",
-        });
-      });
-      
-      const results = await Promise.all(savePromises);
-      const failedSaves = results.filter(r => !r || !r.success).length;
-      
-      if (failedSaves > 0) {
-        toast({
-          title: "Warning",
-          description: `${failedSaves} images failed to save to your gallery.`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Images saved to your gallery!",
-        });
-      }
-    } catch (error) {
-      console.error("Error saving images:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save images to your gallery.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Start polling for job status
-  const startPollingJobStatus = async (jobId: string) => {
-    console.log(`Starting to poll job status for ${jobId}`);
-    
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/jobs/${jobId}/status`);
-        const data = await response.json();
-        
-        console.log(`Poll result for ${jobId}:`, data);
-        
-        if (data.status === 'completed') {
-          clearInterval(pollInterval);
-          
-          // Handle the completed job with images
-          if (data.success && data.images && Array.isArray(data.images)) {
-            handleJobCompleted(data.images);
-          } else {
-            console.error(`Job ${jobId} completed but no valid images were returned`);
-            setGenerateDisable(false);
-          }
-        } else if (data.status === 'failed' || data.status === 'cancelled') {
-          clearInterval(pollInterval);
-          console.error(`Job ${jobId} ${data.status}: ${data.message || 'No error message'}`);
-          setGenerateDisable(false);
-        }
-        // Continue polling for processing jobs
-      } catch (error) {
-        console.error(`Error polling job ${jobId}:`, error);
-      }
-    }, 5000); // Poll every 5 seconds
-    
-    // Store the interval ID so we can clear it if needed
-    // setPollingIntervals(prev => ({
-    //   ...prev,
-    //   [jobId]: pollInterval
-    // }));
+  const handleImagesLoaded = (images: GeneratedImage[]) => {
+    // Potentially update UI or state when images are loaded by the carousel
   };
 
   return (
@@ -708,7 +589,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                 <div className="space-y-6">
                   {user && (
                     <div className="mb-6">
-                      <ActiveJobsPanel onJobComplete={handleJobCompleted} />
+                      <ActiveJobsPanel onJobComplete={setGeneratedImages} />
                     </div>
                   )}
                   
@@ -720,7 +601,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                     <div className="space-y-4">
                       <FormField
                         control={form.control}
-                        name="postivePrompt"
+                        name="positivePrompt"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-zinc-300">Positive Prompt</FormLabel>
@@ -794,7 +675,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                             <FormLabel className="text-zinc-300">Model</FormLabel>
                             <Select
                               onValueChange={field.onChange}
-                              defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger className="bg-zinc-950/50 border-zinc-800 focus:border-purple-500 transition-colors">
@@ -860,7 +741,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                   <FormLabel className="text-zinc-300">Width</FormLabel>
                                   <Select
                                     onValueChange={field.onChange}
-                                    defaultValue={field.value.toString()}
+                                    value={field.value.toString()}
                                   >
                                     <FormControl>
                                       <SelectTrigger className="bg-zinc-950/50 border-zinc-800">
@@ -886,7 +767,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                   <FormLabel className="text-zinc-300">Height</FormLabel>
                                   <Select
                                     onValueChange={field.onChange}
-                                    defaultValue={field.value.toString()}
+                                    value={field.value.toString()}
                                   >
                                     <FormControl>
                                       <SelectTrigger className="bg-zinc-950/50 border-zinc-800">
@@ -925,10 +806,14 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                       min={10}
                                       max={50}
                                       onValueChange={(value: any) => {
-                                        field.onChange(value[0] || value);
+                                        if (Array.isArray(value)) {
+                                          field.onChange(value[0]);
+                                        } else {
+                                          field.onChange(value);
+                                        }
                                       }}
                                       step={1}
-                                      defaultValue={[field.value]}
+                                      value={[field.value]}
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -950,10 +835,14 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                       min={1}
                                       max={20}
                                       onValueChange={(value: any) => {
-                                        field.onChange(value[0] || value);
+                                        if (Array.isArray(value)) {
+                                          field.onChange(value[0]);
+                                        } else {
+                                          field.onChange(value);
+                                        }
                                       }}
                                       step={0.5}
-                                      defaultValue={[field.value]}
+                                      value={[field.value]}
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -975,10 +864,14 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                       min={1}
                                       max={4}
                                       onValueChange={(value: any) => {
-                                        field.onChange(value[0] || value);
+                                        if (Array.isArray(value)) {
+                                          field.onChange(value[0]);
+                                        } else {
+                                          field.onChange(value);
+                                        }
                                       }}
                                       step={1}
-                                      defaultValue={[field.value]}
+                                      value={[field.value]}
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -996,21 +889,22 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                             control={form.control}
                             name="sampler"
                             render={({ field }) => (
-                              <FormItem className="mt-2">
-                                <FormLabel className="text-zinc-300">Sampler</FormLabel>
+                              <FormItem>
+                                <FormLabel className="text-zinc-300 text-xs">Sampler</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
-                                  defaultValue={field.value}
+                                  value={field.value}
                                 >
                                   <FormControl>
-                                    <SelectTrigger className="bg-zinc-950/50 border-zinc-800">
+                                    <SelectTrigger className="bg-zinc-950/50 border-zinc-800/50 focus:border-indigo-500/50 focus:ring-indigo-500/10 placeholder-zinc-600 text-white">
                                       <SelectValue placeholder="Select a sampler" />
                                     </SelectTrigger>
                                   </FormControl>
-                                  <SelectContent className="bg-zinc-950 border-zinc-800">
+                                  <SelectContent className="bg-zinc-900 border-zinc-800">
                                     <SelectItem value="k_euler">k_euler</SelectItem>
                                     <SelectItem value="k_euler_ancestral">k_euler_ancestral</SelectItem>
                                     <SelectItem value="k_heun">k_heun</SelectItem>
+                                    <SelectItem value="k_lms">k_lms</SelectItem>
                                     <SelectItem value="k_dpm_2">k_dpm_2</SelectItem>
                                     <SelectItem value="k_dpm_2_ancestral">k_dpm_2_ancestral</SelectItem>
                                     <SelectItem value="k_dpmpp_2s_ancestral">k_dpmpp_2s_ancestral</SelectItem>
@@ -1026,15 +920,20 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                         </AccordionContent>
                       </AccordionItem>
                       
-                      <AccordionItem value="options" className="border-zinc-800">
-                        <AccordionTrigger className="text-zinc-300 hover:text-white">Additional Options</AccordionTrigger>
+                      <AccordionItem value="options" className="border-zinc-800/50">
+                        <AccordionTrigger className="text-white py-3 hover:text-indigo-300 transition-colors">
+                          <div className="flex items-center">
+                            <Settings className="h-4 w-4 mr-2 text-indigo-400" />
+                            Additional Options
+                          </div>
+                        </AccordionTrigger>
                         <AccordionContent>
-                          <div className="space-y-4 mt-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 pb-2">
                             <FormField
                               control={form.control}
                               name="karras"
                               render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800/50 bg-zinc-950/30 p-3 transition-all hover:border-zinc-700/50">
                                   <div className="space-y-0.5">
                                     <FormLabel className="text-zinc-300">Karras</FormLabel>
                                     <FormDescription className="text-xs text-zinc-500">
@@ -1045,6 +944,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <Switch
                                       checked={field.value}
                                       onCheckedChange={field.onChange}
+                                      className="data-[state=checked]:bg-indigo-500"
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -1055,7 +955,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                               control={form.control}
                               name="hires_fix"
                               render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800/50 bg-zinc-950/30 p-3 transition-all hover:border-zinc-700/50">
                                   <div className="space-y-0.5">
                                     <FormLabel className="text-zinc-300">Hires Fix</FormLabel>
                                     <FormDescription className="text-xs text-zinc-500">
@@ -1066,6 +966,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <Switch
                                       checked={field.value}
                                       onCheckedChange={field.onChange}
+                                      className="data-[state=checked]:bg-indigo-500"
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -1076,7 +977,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                               control={form.control}
                               name="tiling"
                               render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800/50 bg-zinc-950/30 p-3 transition-all hover:border-zinc-700/50">
                                   <div className="space-y-0.5">
                                     <FormLabel className="text-zinc-300">Tiling</FormLabel>
                                     <FormDescription className="text-xs text-zinc-500">
@@ -1087,17 +988,18 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <Switch
                                       checked={field.value}
                                       onCheckedChange={field.onChange}
+                                      className="data-[state=checked]:bg-indigo-500"
                                     />
                                   </FormControl>
                                 </FormItem>
                               )}
                             />
-                            
+                          
                             <FormField
                               control={form.control}
                               name="nsfw"
                               render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800/50 bg-zinc-950/30 p-3 transition-all hover:border-zinc-700/50">
                                   <div className="space-y-0.5">
                                     <FormLabel className="text-zinc-300">NSFW</FormLabel>
                                     <FormDescription className="text-xs text-zinc-500">
@@ -1108,6 +1010,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <Switch
                                       checked={field.value}
                                       onCheckedChange={field.onChange}
+                                      className="data-[state=checked]:bg-indigo-500"
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -1118,7 +1021,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                               control={form.control}
                               name="restore_faces"
                               render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800/50 bg-zinc-950/30 p-3 transition-all hover:border-zinc-700/50">
                                   <div className="space-y-0.5">
                                     <FormLabel className="text-zinc-300">Restore Faces</FormLabel>
                                     <FormDescription className="text-xs text-zinc-500">
@@ -1129,6 +1032,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <Switch
                                       checked={field.value}
                                       onCheckedChange={field.onChange}
+                                      className="data-[state=checked]:bg-indigo-500"
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -1139,7 +1043,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                               control={form.control}
                               name="publicView"
                               render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800 p-3">
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-zinc-800/50 bg-zinc-950/30 p-3 transition-all hover:border-zinc-700/50">
                                   <div className="space-y-0.5">
                                     <FormLabel className="text-zinc-300">Public View</FormLabel>
                                     <FormDescription className="text-xs text-zinc-500">
@@ -1150,6 +1054,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                     <Switch
                                       checked={field.value}
                                       onCheckedChange={field.onChange}
+                                      className="data-[state=checked]:bg-indigo-500"
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -1341,7 +1246,8 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
           <ImageCarousel
             jobId={jobID}
             userId={user?.id}
-            onImagesLoaded={(images) => setGeneratedImages(images)}
+            submittedMetadata={submittedFormData}
+            onImagesLoaded={handleImagesLoaded}
           />
         </div>
       )}
