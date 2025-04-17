@@ -10,7 +10,7 @@ import FooterNav from "@/components/Navs/FooterNav";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Image Gallery",
+  title: "AIPG Image Gallery",
   description: "Create and explore AI-generated images",
   icons: {
     icon: '/favicon.ico',
