@@ -740,7 +740,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                 <FormItem>
                                   <FormLabel className="text-zinc-300">Width</FormLabel>
                                   <Select
-                                    onValueChange={field.onChange}
+                                    onValueChange={(value) => field.onChange(parseInt(value, 10))}
                                     value={field.value.toString()}
                                   >
                                     <FormControl>
@@ -766,7 +766,7 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                 <FormItem>
                                   <FormLabel className="text-zinc-300">Height</FormLabel>
                                   <Select
-                                    onValueChange={field.onChange}
+                                    onValueChange={(value) => field.onChange(parseInt(value, 10))}
                                     value={field.value.toString()}
                                   >
                                     <FormControl>

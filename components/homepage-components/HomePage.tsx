@@ -12,6 +12,7 @@ import ImageDetailModal from "./ImageDetailModal";
 import { motion } from "framer-motion";
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 
 interface HomePageProps {
   user?: User | null;
@@ -145,7 +146,7 @@ export default function HomePage({ user }: HomePageProps) {
               <SearchBar value={value} setValue={setValue} />
             </motion.div>
 
-            {/* Gallery Section with enhanced cards */}
+            {/* Gallery Section with masonry layout */}
             <motion.div 
               className="mt-16"
               initial={{ opacity: 0 }}
@@ -160,70 +161,73 @@ export default function HomePage({ user }: HomePageProps) {
                   </div>
                 </div>
               ) : flattenedData.length > 0 ? (
-                <>
-                  <motion.div 
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-                    variants={container}
-                    initial="hidden"
-                    animate="show"
+                <motion.div
+                  variants={container}
+                  initial="hidden"
+                  animate="show"
+                >
+                  <ResponsiveMasonry
+                    columnsCountBreakPoints={{ 350: 1, 640: 2, 768: 3, 1024: 4 }}
                   >
-                    {flattenedData.map((image, index) => (
-                      <motion.div
-                        key={image.id}
-                        variants={item}
-                        className="group relative overflow-hidden rounded-xl bg-gradient-to-b from-zinc-800/80 to-zinc-900/90 backdrop-blur-sm border border-zinc-800/50 hover:border-zinc-700/80 transition-all duration-300 shadow-lg hover:shadow-2xl cursor-pointer"
-                        onClick={() => handleImageClick(image)}
-                        whileHover={{ y: -5 }}
-                      >
-                        <div className="aspect-square overflow-hidden">
-                          {image.image_data && image.image_data.length > 0 ? (
-                            image.image_data[0].image_url.includes('r2.cloudflarestorage.com') ? (
-                              <img
-                                src={image.image_data[0].image_url}
-                                alt={image.positive_prompt || "AI generated image"}
-                                className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-110"
-                              />
+                    <Masonry gutter="24px">
+                      {flattenedData.map((image, index) => (
+                        <motion.div
+                          key={image.id}
+                          variants={item}
+                          className="mb-0 group relative overflow-hidden rounded-xl bg-gradient-to-b from-zinc-800/80 to-zinc-900/90 backdrop-blur-sm border border-zinc-800/50 hover:border-zinc-700/80 transition-all duration-300 shadow-lg hover:shadow-2xl cursor-pointer"
+                          onClick={() => handleImageClick(image)}
+                          whileHover={{ y: -5 }}
+                        >
+                          <div className="overflow-hidden">
+                            {image.image_data && image.image_data.length > 0 ? (
+                              image.image_data[0].image_url.includes('r2.cloudflarestorage.com') ? (
+                                <img
+                                  src={image.image_data[0].image_url}
+                                  alt={image.positive_prompt || "AI generated image"}
+                                  className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-110"
+                                />
+                              ) : (
+                                <Image
+                                  src={image.image_data[0].image_url}
+                                  alt={image.positive_prompt || "AI generated image"}
+                                  width={500}
+                                  height={500}
+                                  className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-110"
+                                />
+                              )
                             ) : (
-                              <Image
-                                src={image.image_data[0].image_url}
-                                alt={image.positive_prompt || "AI generated image"}
-                                width={500}
-                                height={500}
-                                className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-110"
-                              />
-                            )
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-zinc-800/50 backdrop-blur-sm">
-                              <p className="text-zinc-400">Image not available</p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
-                          <p className="text-white text-sm font-medium line-clamp-3 mb-3">
-                            {image.positive_prompt}
-                          </p>
-                          {image.image_data && image.image_data.length > 1 && (
-                            <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full absolute top-3 right-3 backdrop-blur-sm border border-white/10">
-                              +{image.image_data.length - 1} more
-                            </div>
-                          )}
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-zinc-300 font-medium">
-                              {new Date(image.created_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
-                            </span>
-                            <div className="flex gap-2">
-                              <button className="p-2 rounded-full bg-white/10 text-white hover:bg-indigo-500 transition-colors backdrop-blur-sm">
-                                <Heart className="w-4 h-4" />
-                              </button>
-                              <button className="p-2 rounded-full bg-white/10 text-white hover:bg-indigo-500 transition-colors backdrop-blur-sm">
-                                <Download className="w-4 h-4" />
-                              </button>
+                              <div className="w-full h-full flex items-center justify-center bg-zinc-800/50 backdrop-blur-sm">
+                                <p className="text-zinc-400">Image not available</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+                            <p className="text-white text-sm font-medium line-clamp-3 mb-3">
+                              {image.positive_prompt}
+                            </p>
+                            {image.image_data && image.image_data.length > 1 && (
+                              <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full absolute top-3 right-3 backdrop-blur-sm border border-white/10">
+                                +{image.image_data.length - 1} more
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-zinc-300 font-medium">
+                                {new Date(image.created_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                              </span>
+                              <div className="flex gap-2">
+                                <button className="p-2 rounded-full bg-white/10 text-white hover:bg-indigo-500 transition-colors backdrop-blur-sm">
+                                  <Heart className="w-4 h-4" />
+                                </button>
+                                <button className="p-2 rounded-full bg-white/10 text-white hover:bg-indigo-500 transition-colors backdrop-blur-sm">
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
+                        </motion.div>
+                      ))}
+                    </Masonry>
+                  </ResponsiveMasonry>
 
                   {/* Load More Button */}
                   {hasNextPage && (
@@ -237,7 +241,7 @@ export default function HomePage({ user }: HomePageProps) {
                       </Button>
                     </div>
                   )}
-                </>
+                </motion.div>
               ) : (
                 <div className="text-center py-20">
                   <div className="relative">
