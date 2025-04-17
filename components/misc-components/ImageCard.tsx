@@ -32,11 +32,16 @@ const ImageCard = ({ item, user, forModal = false }: any) => {
     mutationFn: () => deleteUserImages(item.id),
   });
 
-  const toggleLike = (e: React.MouseEvent, itemID: any, userID: any) => {
-    e.stopPropagation();
-    if (user) {
-      likeMutate(userID, itemID);
+  const toggleLike = (e?: React.MouseEvent) => {
+    // Stop event propagation if an event is provided
+    if (e) e.stopPropagation();
+    
+    if (!user) {
+      return;
     }
+    
+    // Call likeMutate without parameters
+    likeMutate();
   };
 
   // Helper function to check URL type
@@ -126,7 +131,7 @@ const ImageCard = ({ item, user, forModal = false }: any) => {
       )}
       {user && (
         <button
-          onClick={(e) => toggleLike(e, item.id, user)}
+          onClick={toggleLike}
           className="absolute top-2 right-2 bg-gray-900 bg-opacity-70 p-1 rounded-full opacity-0 group-hover:opacity-100 outline-none"
         >
           {isLiked ? (
@@ -205,7 +210,7 @@ const ImageCard = ({ item, user, forModal = false }: any) => {
             <CarouselComponent
               images={item.image_data}
               isLiked={isLiked}
-              toggleLike={() => toggleLike(null as any, item.id, user)}
+              toggleLike={toggleLike}
               userID={user}
             />
           </div>

@@ -14,9 +14,10 @@ import { Download, Share, Heart, ChevronLeft, ChevronRight, ImageIcon, Copy, Che
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { deleteUserImages } from '@/app/_api/deleteImage';
 import { LoadingSpinner } from '../misc-components/LoadingSpinner';
+import { fetchLikedStatus, likeorUnlikeImages } from '@/app/_api/likeImages';
 
 interface ImageDetailModalProps {
   isOpen: boolean;
@@ -41,10 +42,79 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [liked, setLiked] = useState(false);
   const [copied, setCopied] = useState(false);
   
   const queryClient = useQueryClient();
+  
+  // Fetch the liked status from the database
+  const { data: isLiked, refetch: refetchLikeStatus } = useQuery({
+    queryKey: ["imageLikeStatus", image?.id, currentUserId],
+    queryFn: () => {
+      console.log("Fetching like status for:", { imageId: image?.id, userId: currentUserId });
+      if (!image?.id || !currentUserId) {
+        console.warn("Missing required data for fetching like status:", { imageId: image?.id, userId: currentUserId });
+        return false;
+      }
+      return fetchLikedStatus(image?.id, currentUserId);
+    },
+    enabled: !!currentUserId && !!image?.id && isOpen
+  });
+  
+  // Set up mutation for like/unlike
+  const { mutate: likeMutate, isPending: isLiking } = useMutation({
+    mutationKey: ["likeMutation", image?.id, currentUserId],
+    mutationFn: () => {
+      console.log("[ImageDetailModal] Toggling like for:", { imageId: image?.id, userId: currentUserId });
+      if (!image?.id || !currentUserId) {
+        console.warn("Missing required data for toggling like:", { imageId: image?.id, userId: currentUserId });
+        throw new Error("Missing required data");
+      }
+      return likeorUnlikeImages(currentUserId, image?.id);
+    },
+    // Add optimistic updates for better UX
+    onMutate: async () => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["imageLikeStatus", image?.id, currentUserId] });
+      
+      // Snapshot the previous value
+      const previousLiked = queryClient.getQueryData(["imageLikeStatus", image?.id, currentUserId]);
+      console.log("[ImageDetailModal] Optimistic update - previous state:", previousLiked);
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(["imageLikeStatus", image?.id, currentUserId], !previousLiked);
+      console.log("[ImageDetailModal] Optimistic update - new state:", !previousLiked);
+      
+      // Return a context object with the previous value
+      return { previousLiked };
+    },
+    onSuccess: async (newIsLiked) => {
+      console.log("[ImageDetailModal] Like toggled successfully, new status:", newIsLiked);
+      
+      // Invalidate any other queries that might depend on like status
+      queryClient.invalidateQueries({ queryKey: ["userLikedImages", currentUserId] });
+      
+      // Show a toast notification based on the new status
+      toast.success(newIsLiked ? 'Image liked' : 'Image unliked');
+    },
+    onError: (error, _, context) => {
+      console.error('[ImageDetailModal] Error toggling like:', error);
+      toast.error('Failed to update like status');
+      
+      // Rollback to the previous value if there was an error
+      if (context) {
+        console.log("[ImageDetailModal] Rolling back optimistic update");
+        queryClient.setQueryData(
+          ["imageLikeStatus", image?.id, currentUserId], 
+          context.previousLiked
+        );
+      }
+    },
+    // Refetch after error or success
+    onSettled: () => {
+      console.log("[ImageDetailModal] Refetching like status after mutation");
+      refetchLikeStatus();
+    },
+  });
   
   const { mutate: deleteMutate, isPending: isDeleting } = useMutation({
     mutationFn: () => deleteUserImages(image.id),
@@ -63,8 +133,52 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   useEffect(() => {
     // Reset to first image when modal opens
     setCurrentImageIndex(0);
-    setLiked(false);
-  }, [isOpen, image]);
+    
+    // Refetch like status when modal opens with a new image
+    if (isOpen && currentUserId && image?.id) {
+      refetchLikeStatus();
+    }
+  }, [isOpen, image, currentUserId, refetchLikeStatus]);
+  
+  useEffect(() => {
+    // When modal opens, check if user is authenticated
+    if (isOpen && !currentUserId) {
+      console.log("[ImageDetailModal] Modal opened but user is not authenticated");
+      toast.info('Log in to like images and save them to your collection', {
+        id: 'login-prompt',
+        duration: 5000,
+      });
+    }
+  }, [isOpen, currentUserId]);
+  
+  const handleLikeToggle = () => {
+    console.log("[ImageDetailModal] Like button clicked, current state:", {
+      userId: currentUserId,
+      imageId: image?.id,
+      isCurrentlyLiked: isLiked,
+      isLiking
+    });
+    
+    if (!currentUserId) {
+      console.warn("[ImageDetailModal] User not logged in, can't like image");
+      toast.error('You must be logged in to like images');
+      return;
+    }
+    
+    if (!image?.id) {
+      console.warn("[ImageDetailModal] Missing image ID, can't like image");
+      toast.error('Error: Unable to like this image');
+      return;
+    }
+    
+    if (isLiking) {
+      console.log("[ImageDetailModal] Like action already in progress, ignoring click");
+      return; // Prevent multiple clicks
+    }
+    
+    console.log("[ImageDetailModal] Calling likeMutate");
+    likeMutate();
+  };
 
   const handleDownload = async (imageUrl: string) => {
     try {
@@ -104,7 +218,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   };
   
   // Determine if the current user is the owner of this image
-  const isOwner = isUserOwned || (currentUserId && image.user_id === currentUserId);
+  const isOwner = isUserOwned || (currentUserId && image && image.user_id === currentUserId);
 
   if (!image || !image.image_data || image.image_data.length === 0) return null;
 
@@ -316,22 +430,47 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
               </motion.div>
             )}
             
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button 
-                variant="outline" 
-                onClick={() => setLiked(!liked)}
-                className={`bg-zinc-900/80 hover:bg-zinc-800 border-zinc-800/50 rounded-full px-3 md:px-5 py-1 h-8 md:h-10 text-xs md:text-sm ${
-                  liked ? 'text-pink-500 border-pink-500/30' : 'text-white'
-                }`}
+            {/* Like Button - Different versions for logged-in vs not logged-in */}
+            {!currentUserId ? (
+              // User is not logged in - show login prompt on the button
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Heart className={`h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2 ${liked ? 'fill-pink-500' : ''}`} />
-                {liked ? 'Liked' : 'Like'}
-              </Button>
-            </motion.div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => toast.error('You must be logged in to like images')}
+                  className="bg-zinc-900/80 hover:bg-zinc-800 border-zinc-800/50 rounded-full px-3 md:px-5 py-1 h-8 md:h-10 text-xs md:text-sm text-white"
+                >
+                  <Heart className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
+                  Sign in to Like
+                </Button>
+              </motion.div>
+            ) : (
+              // User is logged in - show normal like button
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button 
+                  variant="outline" 
+                  onClick={handleLikeToggle}
+                  disabled={isLiking}
+                  className={`bg-zinc-900/80 hover:bg-zinc-800 border-zinc-800/50 rounded-full px-3 md:px-5 py-1 h-8 md:h-10 text-xs md:text-sm ${
+                    isLiked ? 'text-pink-500 border-pink-500/30' : 'text-white'
+                  } ${isLiking ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                  {isLiking ? (
+                    <div className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  ) : (
+                    <Heart className={`h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2 ${isLiked ? 'fill-pink-500' : ''}`} />
+                  )}
+                  {isLiked ? 'Liked' : 'Like'}
+                </Button>
+              </motion.div>
+            )}
             
+            {/* Download Button */}
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -351,6 +490,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
               </Button>
             </motion.div>
             
+            {/* Close Button */}
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

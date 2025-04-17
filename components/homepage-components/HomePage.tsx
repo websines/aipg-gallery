@@ -10,16 +10,29 @@ import { Download, Heart, ImageIcon, ArrowRight, Search } from "lucide-react";
 import SearchBar from "./SearchBar";
 import ImageDetailModal from "./ImageDetailModal";
 import { motion } from "framer-motion";
+import { createSupabaseClient } from '@/lib/supabase/client';
 
 export default function HomePage() {
   const [value, setValue] = useState("");
   const [selectedImage, setSelectedImage] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   
   // For SSR compatibility
   useEffect(() => {
     setMounted(true);
+  }, []);
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log("[HomePage] Current user:", user);
+      setCurrentUserId(user?.id || '');
+    };
+    
+    fetchUser();
   }, []);
   
   const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery({
@@ -246,6 +259,7 @@ export default function HomePage() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         image={selectedImage}
+        currentUserId={currentUserId}
       />
     </div>
   );
