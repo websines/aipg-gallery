@@ -14,6 +14,15 @@ export const isValidHttpUrl = (string: string = '') => {
   export const transformFormData = (
     data: FormSchema
   ): any => {
+    console.log("transformFormData received dimensions:", { 
+      width: data.width, 
+      height: data.height, 
+      types: { 
+        width: typeof data.width, 
+        height: typeof data.height 
+      }
+    });
+
     // Common parameters for all generation types
     const transformedData: any = {
       prompt: data.positivePrompt,
@@ -41,6 +50,11 @@ export const isValidHttpUrl = (string: string = '') => {
       post_processors: data.post_processors || [],
       publicView: data.publicView,
     };
+    
+    console.log("Final transformed dimensions:", { 
+      width: transformedData.params.width, 
+      height: transformedData.params.height 
+    });
     
     // Add image-to-image and inpainting specific parameters
     if (data.generationMode === "image-to-image" || data.generationMode === "inpainting") {

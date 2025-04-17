@@ -268,6 +268,8 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
   };
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
+    console.log("Form submitted with dimensions:", { width: data.width, height: data.height, types: { width: typeof data.width, height: typeof data.height }});
+    
     if (!user) {
       toast({
         title: "Error",
@@ -740,7 +742,11 @@ const ImageGeneratorComponent = ({ user }: { user: User | null }) => {
                                 <FormItem>
                                   <FormLabel className="text-zinc-300">Width</FormLabel>
                                   <Select
-                                    onValueChange={(value) => field.onChange(parseInt(value, 10))}
+                                    onValueChange={(value) => {
+                                      const numValue = parseInt(value, 10);
+                                      console.log("Width changed to:", numValue, typeof numValue);
+                                      field.onChange(numValue);
+                                    }}
                                     value={field.value.toString()}
                                   >
                                     <FormControl>
