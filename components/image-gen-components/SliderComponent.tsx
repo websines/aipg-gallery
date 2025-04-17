@@ -15,17 +15,52 @@ function SliderWithCounter({
   max,
   step = 1,
   defaultValue,
+  value,
   onValueChange,
 }: any) {
-  const [sliderValue, setSliderValue] = useState(defaultValue);
+  // Initialize with the value prop or defaultValue or a safe fallback
+  const initialValue = Array.isArray(value) 
+    ? value[0]
+    : typeof value === 'number' 
+      ? value 
+      : defaultValue && !isNaN(defaultValue) 
+        ? defaultValue 
+        : min;
+
+  const [sliderValue, setSliderValue] = useState(initialValue);
+
+  // Update sliderValue when value prop changes
+  useEffect(() => {
+    const newValue = Array.isArray(value) 
+      ? value[0] 
+      : typeof value === 'number' 
+        ? value 
+        : undefined;
+    
+    if (newValue !== undefined && !isNaN(newValue)) {
+      setSliderValue(newValue);
+    }
+  }, [value]);
 
   const handleChange = (newValue: any) => {
-    setSliderValue(newValue);
-    onValueChange(newValue);
+    if (!Array.isArray(newValue) && typeof newValue !== 'number') return;
+    
+    const actualValue = Array.isArray(newValue) ? newValue[0] : newValue;
+    
+    if (isNaN(actualValue)) {
+      console.error("SliderWithCounter received NaN value:", newValue);
+      return;
+    }
+    
+    setSliderValue(actualValue);
+    onValueChange(actualValue); // Always send a number, not an array
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseInt(e.target.value);
+    const textValue = e.target.value.trim();
+    if (textValue === '') return;
+    
+    const newValue = parseFloat(textValue);
     if (!isNaN(newValue) && newValue >= min && newValue <= max) {
       setSliderValue(newValue);
       handleChange(newValue);
@@ -33,30 +68,35 @@ function SliderWithCounter({
   };
 
   const handleIncrement = () => {
-    setSliderValue(Math.min(sliderValue + step, max));
-    handleChange(Math.min(sliderValue + step, max));
+    const newValue = Math.min(sliderValue + step, max);
+    setSliderValue(newValue);
+    handleChange(newValue);
   };
 
   const handleDecrement = () => {
-    setSliderValue(Math.max(sliderValue - step, min));
-    handleChange(Math.max(sliderValue - step, min));
+    const newValue = Math.max(sliderValue - step, min);
+    setSliderValue(newValue);
+    handleChange(newValue);
   };
 
+  // Ensure sliderValue is always a number for display
+  const displayValue = isNaN(sliderValue) ? min : sliderValue;
+
   return (
-    <div className="flex flex-row justify-between items-center gap-2 ">
+    <div className="flex flex-row justify-between items-center gap-2">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger type="button">
             <Slider
-              value={[sliderValue]}
-              defaultValue={[defaultValue]}
+              value={[displayValue]}
+              min={min}
               max={max}
               step={step}
-              onValueChange={handleChange}
+              onValueChange={(values) => handleChange(values)}
               className="w-[250px] md:flex hidden"
             />
           </TooltipTrigger>
-          <TooltipContent sideOffset={5}>{sliderValue}</TooltipContent>
+          <TooltipContent sideOffset={5}>{displayValue}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <div className="flex flex-row gap-2 items-center justify-center">
@@ -64,11 +104,11 @@ function SliderWithCounter({
           -
         </Button>
         <Input
-          value={sliderValue}
+          value={displayValue.toString()}
           className="md:w-[60px]"
           onChange={handleInput}
+          type="text"
         />
-
         <Button onClick={handleIncrement} variant={"outline"} type="button">
           +
         </Button>

@@ -27,7 +27,7 @@ import {
 } from "../ui/dialog";
 import useJobIdStore from "@/stores/jobIDStore";
 import { checkImageStatus } from "@/app/_api/checkImageStatus";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getFinishedImage } from "@/app/_api/fetchFinishedImage";
 import { User } from "@supabase/supabase-js";
 
@@ -36,167 +36,267 @@ import useImageMetadataStore from "@/stores/ImageMetadataStore";
 import { saveImageData, saveMetadata } from "@/app/_api/saveImageToSupabase";
 import { Info } from "lucide-react";
 import { useToast } from "../ui/use-toast";
+import { Button } from "../ui/button";
+import { GeneratedImage } from "@/types";
+import { LoadingSpinner } from "../misc-components/LoadingSpinner";
+import { FinishedImageResponse, FinishedImageResponseError } from "@/types";
 
-const ImageCarousel = ({ user }: { user: User | null }) => {
-  const toast = useToast();
-  const jobID = useJobIdStore((state: any) => state.jobId);
-  const metadata = useImageMetadataStore((state) => state.metadata);
-  const resetMetadata = useImageMetadataStore((state) => state.resetMetadata);
-  const addImg = useImageMetadataStore((state) => state.addImage);
+// [M] Define a simpler type for the passed metadata
+interface SubmittedMetadata {
+  positivePrompt: string;
+  negativePrompt?: string;
+  sampler: string;
+  model: string;
+  guidance: number;
+  publicView: boolean;
+}
 
-  const [finalImages, setImages] = useState<any>(null);
-  const [shouldRefetch, setShouldRefetch] = useState(true);
-  const { data: performance } = useQuery({
-    queryKey: ["performance"],
-    queryFn: () => fetchHordePerformace(),
-    refetchOnMount: "always",
-    refetchInterval: 60000,
-  });
+interface ImageCarouselProps {
+  jobId: string;
+  userId?: string;
+  onImagesLoaded?: (images: GeneratedImage[]) => void;
+  submittedMetadata: SubmittedMetadata | null; // [M] Use the simpler type
+}
 
-  const { data: imgStatus } = useQuery({
-    queryKey: ["checkImgStatus", jobID],
-    queryFn: () => checkImageStatus(jobID),
-    refetchInterval: shouldRefetch ? 1000 : false,
-    enabled: jobID !== "",
-  });
+const ImageCarousel = ({ jobId, userId, onImagesLoaded, submittedMetadata }: ImageCarouselProps) => {
+  const { toast } = useToast();
+  // [M] Remove store usage as metadata comes from props
+  // const metadata = useImageMetadataStore((state) => state.metadata);
+  // const resetMetadata = useImageMetadataStore((state) => state.resetMetadata);
+  // const addImg = useImageMetadataStore((state) => state.addImage);
 
-  const { data: finsihedImage } = useQuery({
-    queryKey: ["finishedImage", jobID], // Ensure a unique query key
-    queryFn: () => getFinishedImage(jobID),
-    enabled: imgStatus?.done,
-  });
+  const [images, setImages] = useState<any>(null);
+  const [finalImages, setFinalImages] = useState<any>(null);
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
+  const [isPolling, setIsPolling] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // Add a ref to track if images have been saved for this job
+  const savedImagesRef = useRef<{[key: string]: boolean}>({});
 
-  useEffect(() => {
-    if (imgStatus?.done && shouldRefetch) {
-      setShouldRefetch(false); // Set shouldRefetch to false to avoid triggering again
-    }
-  }, [imgStatus, shouldRefetch]);
-  useEffect(() => {
-    if (finsihedImage?.success) {
-      setImages(finsihedImage);
-      useJobIdStore.getState().clearJobId();
-    }
-  }, [finsihedImage]);
+  // Polling function to check image status
+  const pollImageStatus = async () => {
+    if (!jobId || isComplete) return;
 
-  useEffect(() => {
-    if (finalImages != null) {
-      finalImages.generations.map((item: any) => {
-        addImg({
-          base64String: item.base64String,
-          seed: item.seed,
-        });
-      });
-    }
-  }, [finalImages, addImg]);
+    setIsPolling(true);
+    try {
+      // [M] Assert result type for success case
+      const result: FinishedImageResponse | FinishedImageResponseError = await getFinishedImage(jobId, userId);
+      
+      if (result.success) {
+        // [M] Type assertion needed here as TS doesn't narrow the union type effectively
+        const successResult = result as FinishedImageResponse;
+        if (successResult.images) {
+          // We have our images
+          setGeneratedImages(successResult.images);
+          setIsComplete(true);
+          
+          // Notify parent component if callback provided
+          if (onImagesLoaded) {
+            onImagesLoaded(successResult.images);
+          }
+          
+          // Check if we already saved images for this job
+          const alreadySaved = savedImagesRef.current[jobId];
+          
+          // [M] Add logging to check why save might be skipped
+          console.log("Polling success: Checking conditions for save...", {
+            userId: userId,
+            submittedMetadata: submittedMetadata,
+            shouldSave: !!(userId && submittedMetadata),
+            alreadySaved: alreadySaved
+          });
 
-  useEffect(() => {
-    async function imgWorker(userId: any) {
-      try {
-        if (metadata?.positivePrompt != "") {
-          const metadataId = await saveMetadata(metadata, userId);
-          resetMetadata();
-          if (finalImages != null) {
-            for (const image of finalImages.generations) {
-              await saveImageData(image, metadataId);
-            }
+          // Save images if user is logged in and we haven't saved for this job yet
+          if (userId && submittedMetadata && !alreadySaved) {
+            await saveImagesToDatabase(successResult.images);
+            // Mark this job as saved
+            savedImagesRef.current[jobId] = true;
           }
         }
-      } catch (error) {
-        console.error("Error during save:", error);
+      } else {
+        // If still processing, continue polling
+        setTimeout(pollImageStatus, 3000);
       }
+    } catch (error) {
+      console.error("Error polling for image status:", error);
+      // Retry after a delay
+      setTimeout(pollImageStatus, 5000);
+    } finally {
+      setIsPolling(false);
     }
+  };
 
-    imgWorker(user?.id);
-  }, [finalImages, addImg]);
+  // Save images to database
+  const saveImagesToDatabase = async (images: GeneratedImage[]) => {
+    // [M] Add log to track entry into this function
+    console.log("Entering saveImagesToDatabase for job:", jobId, "with metadata:", submittedMetadata);
+
+    if (!userId || !submittedMetadata || images.length === 0) {
+      console.log("Skipping save: Missing userId, submittedMetadata, or images", { userId, submittedMetadata, images });
+      return;
+    }
+    
+    // Check if we already saved these images
+    if (savedImagesRef.current[jobId]) {
+      console.log("Skipping save: Images for this job have already been saved", { jobId });
+      return;
+    }
+    
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      // First save metadata using the passed prop
+      console.log("Saving metadata with submitted prop:", submittedMetadata);
+      const metadataResult = await saveMetadata({
+        positive_prompt: submittedMetadata.positivePrompt,
+        negative_prompt: submittedMetadata.negativePrompt || "",
+        sampler: submittedMetadata.sampler,
+        model: submittedMetadata.model,
+        guidance: submittedMetadata.guidance,
+        public_view: submittedMetadata.publicView,
+        user_id: userId,
+      });
+      
+      if (!metadataResult.success) {
+        throw new Error("Failed to save metadata");
+      }
+      
+      const metadataId = metadataResult.id;
+      
+      // [M] Add check for metadataId before proceeding
+      if (!metadataId) {
+        throw new Error("No metadata ID returned after saving metadata");
+      }
+      
+      // Then save each image
+      const savePromises = images.map(async (image) => {
+        const imageUrl = image.img_url || image.base64String;
+        if (!imageUrl) return null;
+        
+        return saveImageData({
+          image_url: imageUrl,
+          // [M] Ensure seed is converted to string
+          seed: image.seed ? String(image.seed) : "", 
+          // [M] metadataId is guaranteed to be string here due to check above
+          metadata_id: metadataId,
+        });
+      });
+      
+      const results = await Promise.all(savePromises);
+      const failedSaves = results.filter(r => !r || !r.success).length;
+      
+      if (failedSaves > 0) {
+        toast({
+          title: "Warning",
+          description: `${failedSaves} images failed to save to your gallery.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Images saved to your gallery!",
+        });
+      }
+      
+      // Mark this job as saved
+      savedImagesRef.current[jobId] = true;
+    } catch (error) {
+      console.error("Error saving images:", error);
+      setSaveError("Failed to save images to your gallery. Please try again later.");
+      toast({
+        title: "Error",
+        description: "Failed to save images to your gallery.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Start polling when component mounts or jobId changes
+  // But ensure we only poll once for each jobId
+  useEffect(() => {
+    if (jobId && !savedImagesRef.current[jobId]) {
+      pollImageStatus();
+    }
+  }, [jobId]);
+
+  if (!jobId) {
+    return null;
+  }
 
   return (
     <div className="w-full">
-      <Card className="w-[80vw] justify-start items-center border-0 p-2 rounded-lg bg-zinc-950 border-1 border-zinc-950">
-        <CardHeader className="mx-auto flex flex-col md:flex-row items-center justify-between text-center gap-4">
-          <CardTitle>AIPG IMAGE GENERATOR</CardTitle>
-          <div className="flex flex-row justify-between p-2 m-2 items-center">
-            <div className=" flex flex-row items-center gap-1">
-              <div
-                className={`w-2 h-2 ${
-                  performance?.worker_count > 0 ? "bg-green-500" : "bg-red-500"
-                } rounded-full`}
-              />
-              <div className="text-md font-medium">
-                {performance?.worker_count} Worker(s) online
-              </div>
-            </div>
-            <Dialog>
-              <DialogTrigger
-                className="hover:bg-gray-800 cursor-pointer p-2 rounded-full"
-                type="button"
-              >
-                <Info className="w-6 h-6" />
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>AIPG Horde Stats</DialogTitle>
-                </DialogHeader>
-                <div className="p-4 text-white colums-1 md:columns-2 gap-2">
-                  <p>Queued requests: {performance?.queued_requests}</p>
-                  <p>Queued megapixels: {performance?.queued_megapixels}</p>
-                  <p>Thread_count: {performance?.thread_count}</p>
-                  <p>Queued_tokens: {performance?.queued_tokens}</p>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent className="">
-          <Carousel className="w-full mx-auto my-6 md:my-0 relative">
-            <CarouselContent>
-              {finalImages?.success! &&
-                finalImages?.generations.map(
-                  (generatedImg: any, index: any) => (
-                    <CarouselItem key={index}>
-                      <div className="p-1 mt-4">
-                        {generatedImg && (
-                          <img
-                            src={`data:image/jpg;base64,${generatedImg.base64String}`}
-                            className="max-w-full object-contain rounded-lg mx-auto"
-                            alt="img"
-                          />
-                        )}
-                      </div>
-                    </CarouselItem>
-                  )
-                )}
-            </CarouselContent>
-            {finalImages?.success && (
-              <div>
-                <CarouselPrevious className="absolute top-1/2 left-3" />
-                <CarouselNext className="absolute top-1/2 right-3" />
-              </div>
-            )}
-          </Carousel>
-        </CardContent>
+      {isPolling && !isComplete && (
+        <div className="flex flex-col items-center justify-center py-10">
+          <LoadingSpinner />
+          <p className="text-sm text-zinc-400 mt-4">
+            Generating your images... This may take a moment. Please don't refresh the page.
+          </p>
+        </div>
+      )}
 
-        {jobID && imgStatus?.done === false && (
-          <CardFooter className="flex flex-col my-4 gap-2">
-            <div className="flex flex-row items-center justify-center gap-2">
-              <p className="text-md font-semibold text-white">
-                Generating Your Images
-              </p>{" "}
-              <span>
-                <Loading />
-              </span>
+      {isComplete && generatedImages.length > 0 && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold">Generated Images</h2>
+          
+          <Carousel className="w-full">
+            <CarouselContent>
+              {generatedImages.map((image, index) => (
+                <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                  <div className="p-1">
+                    <Card className="overflow-hidden border-zinc-800 bg-zinc-900/60">
+                      <CardContent className="p-0 aspect-square relative">
+                        {image.img_url ? (
+                          image.img_url.includes('r2.cloudflarestorage.com') ? (
+                            <img 
+                              src={image.img_url} 
+                              alt={`Generated image ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <img 
+                              src={image.img_url} 
+                              alt={`Generated image ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          )
+                        ) : image.base64String ? (
+                          <img 
+                            src={image.base64String} 
+                            alt={`Generated image ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                            <p className="text-zinc-500">Image not available</p>
+                          </div>
+                        )}
+                      </CardContent>
+                      <CardFooter className="p-3 bg-zinc-900/80">
+                        <div className="w-full text-xs text-zinc-400">
+                          <p>Seed: {image.seed || 'Unknown'}</p>
+                        </div>
+                      </CardFooter>
+                    </Card>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-2" />
+            <CarouselNext className="right-2" />
+          </Carousel>
+          
+          {saveError && (
+            <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 mt-4">
+              <p className="text-red-300 text-sm">{saveError}</p>
             </div>
-            <div className="text-sm text-center">Job ID: {jobID as string}</div>
-            <div className="text-sm text-center font-medium transition duration-100 linear">
-              Wait Time: {imgStatus?.wait_time} seconds
-            </div>
-          </CardFooter>
-        )}
-        {/* {finalImages?.success && (
-          <div className="text-white p-4 text-center font-medium m-2">
-            Your images are generated
-          </div>
-        )} */}
-      </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -2,6 +2,10 @@ import { supabase } from "@/lib/supabase";
 
 
 export async function fetchUserGeneratedImages(userId: string | undefined, pageParam: number, value: string) {
+    if (!userId) {
+      console.log("fetchUserGeneratedImages: No user ID provided, returning empty array.");
+      return [];
+    }
 
     try{
 
@@ -15,10 +19,12 @@ export async function fetchUserGeneratedImages(userId: string | undefined, pageP
         
         if (error) {
             console.error("Error fetching data:", error);
+            throw error; 
           } else {
             return data; 
           }
     }catch(err){
-        console.log(err)
+        console.error("Exception fetching data:", err);
+        throw err; 
     }
 }

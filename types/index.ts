@@ -8,6 +8,7 @@ export interface CreateImageResponse {
     status?: string
     message?: string
     kudos?: number
+    error?: string
   }
 
   export interface GenerateResponse {
@@ -192,18 +193,20 @@ export interface IArtBotImageDetails {
   }
 
 
-  export interface FinishedImageResponse {
-    success: boolean
-    jobId: string
-    canRate: boolean
-    kudos: number
-    generations: Array<GeneratedImage | FinishedImageResponseError>
+  export type FinishedImageResponse = {
+    success: true
+    status: string
+    message: string
+    images: GeneratedImage[]
   }
-  
+
   export interface FinishedImageResponseError {
     message: string
     status: string
     success: boolean
+    retryAfter?: number
+    waitTime?: number
+    queuePosition?: number
   }
 
   export interface CheckImage {
@@ -232,9 +235,86 @@ export interface IArtBotImageDetails {
   }
   
   type OmittedGeneratedImageProps = 'id' | 'img' | 'state'
-  export interface GeneratedImage
-    extends Omit<AiHordeGeneration, OmittedGeneratedImageProps> {
-    base64String: string
-    hordeImageId: string
-    thumbnail: string
+  export interface GeneratedImage {
+    id?: string;
+    base64String?: string;
+    hordeImageId?: string;
+    thumbnail?: string;
+    censored?: boolean;
+    model?: string;
+    seed?: number | string;
+    worker_id?: string;
+    worker_name?: string;
+    img_url?: string;
+    error?: string;
+    saved?: boolean;
   }
+
+  export interface FormSchema {
+    positivePrompt: string;
+    negativePrompt: string | undefined;
+    seed: string;
+    sampler: string;
+    batchSize: number;
+    steps: number;
+    width: number;
+    height: number;
+    guidance: number;
+    clipskip: number;
+    model: string;
+    karras: boolean;
+    nsfw: boolean;
+    hires_fix: boolean;
+    tiling: boolean;
+    publicView: boolean;
+    post_processors: string[];
+    restore_faces: boolean;
+    controlType: string;
+    xysType: boolean;
+    createVideo: boolean;
+    generationMode: "text-to-image" | "image-to-image" | "inpainting";
+    sourceImage?: string;
+    sourceMask?: string;
+    denoising_strength: number;
+    multiSelect: boolean;
+    multiModel: boolean;
+    multiSampler: boolean;
+    multiClipSkip: boolean;
+    multiSteps: boolean;
+    multiHiresFix: boolean;
+    multiKarras: boolean;
+    multiControlType: boolean;
+  }
+
+// [S] Add types for Supabase data fetching
+export interface ImageDataBase {
+  id: string;
+  image_url: string;
+  seed?: string | null;
+}
+
+export interface ImageMetadataWithImages {
+  id: string;
+  user_id: string;
+  positive_prompt: string;
+  negative_prompt?: string | null;
+  sampler?: string | null;
+  model?: string | null;
+  guidance?: number | null;
+  public_view?: boolean | null;
+  created_at: string;
+  image_data: ImageDataBase[]; // Array of related images
+}
+
+// [S] Define types for ImageMetadata and ImageData tables if needed elsewhere
+export interface ImageMetadata {
+  id: string;
+  user_id: string;
+  positive_prompt: string;
+  negative_prompt?: string | null;
+  sampler?: string | null;
+  model?: string | null;
+  guidance?: number | null;
+  public_view?: boolean | null;
+  created_at: string;
+}
