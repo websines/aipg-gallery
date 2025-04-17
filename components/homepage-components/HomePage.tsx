@@ -11,8 +11,13 @@ import SearchBar from "./SearchBar";
 import ImageDetailModal from "./ImageDetailModal";
 import { motion } from "framer-motion";
 import { createSupabaseClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 
-export default function HomePage() {
+interface HomePageProps {
+  user?: User | null;
+}
+
+export default function HomePage({ user }: HomePageProps) {
   const [value, setValue] = useState("");
   const [selectedImage, setSelectedImage] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,15 +30,22 @@ export default function HomePage() {
   }, []);
   
   useEffect(() => {
-    const fetchUser = async () => {
-      const supabase = createSupabaseClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log("[HomePage] Current user:", user);
-      setCurrentUserId(user?.id || '');
-    };
-    
-    fetchUser();
-  }, []);
+    // If user is provided via props, use it
+    if (user) {
+      console.log("[HomePage] User provided from props:", user);
+      setCurrentUserId(user.id || '');
+    } else {
+      // Otherwise fetch from client-side
+      const fetchUser = async () => {
+        const supabase = createSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        console.log("[HomePage] Current user from client:", user);
+        setCurrentUserId(user?.id || '');
+      };
+      
+      fetchUser();
+    }
+  }, [user]);
   
   const { isLoading, data, hasNextPage, fetchNextPage } = useInfiniteQuery({
     queryKey: ["images", value],

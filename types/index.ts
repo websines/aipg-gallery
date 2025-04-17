@@ -204,6 +204,9 @@ export interface IArtBotImageDetails {
     message: string
     status: string
     success: boolean
+    retryAfter?: number
+    waitTime?: number
+    queuePosition?: number
   }
 
   export interface CheckImage {

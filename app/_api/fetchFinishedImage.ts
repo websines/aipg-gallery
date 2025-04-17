@@ -370,7 +370,7 @@ export const getFinishedImage = async (
               return generatedImage;
             } 
             // Check if it's a base64 string
-            else if (isBase64UrlImage(generation.img)) {
+            else if (generation.img.startsWith('data:image')) {
               console.log("It's a base64 image");
               // It's already a base64 string with data:image prefix
               const thumbnail = await generateBase64Thumbnail(generation.img);
@@ -425,10 +425,10 @@ export const getFinishedImage = async (
     // Update job status to completed
     if (userId) {
       try {
-        const jobData = await getJobById(jobId, userId);
+        const jobData = await getJobById(jobId);
         
         // Only update if the job exists and isn't already completed
-        if (jobData && jobData.status !== 'completed') {
+        if (jobData && jobData.success && jobData.data && jobData.data.status !== 'completed') {
           await updateJobStatus(jobId, 'completed');
         }
       } catch (trackingError) {

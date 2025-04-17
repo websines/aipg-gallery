@@ -44,21 +44,36 @@ export async function POST(
       
       try {
         // Import the saveImageData function
-        const { saveImageData } = await import('@/app/_api/saveImageToSupabase');
+        const { saveImageData, saveMetadata } = await import('@/app/_api/saveImageToSupabase');
         
         // Save each partial image
         for (const generation of externalCancelResult.data.generations) {
           if (generation.img) {
+            // First create metadata
+            const metadataResult = await saveMetadata({
+              positive_prompt: generation.prompt || 'Cancelled job',
+              negative_prompt: '',
+              sampler: 'unknown',
+              model: generation.model || 'unknown',
+              guidance: 7.5,
+              public_view: true,
+              user_id: userId
+            });
+            
+            if (!metadataResult.success || !metadataResult.id) {
+              console.error('Failed to create metadata for cancelled job image:', metadataResult.error);
+              continue;
+            }
+            
+            // Then save the image with the metadata id
             const saveResult = await saveImageData({
-              userId,
-              jobId,
-              prompt: generation.prompt || 'Cancelled job',
-              imageData: generation.img,
-              model: generation.model || 'unknown'
+              image_url: generation.img,
+              seed: generation.seed || '',
+              metadata_id: metadataResult.id
             });
             
             if (saveResult.success) {
-              savedImages.push(saveResult.data);
+              savedImages.push(saveResult.id || '');
             }
           }
         }

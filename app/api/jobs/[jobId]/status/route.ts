@@ -29,14 +29,16 @@ export async function GET(
     }
     
     // Get job from database
-    const job = await getJobById(jobId, user.id);
+    const jobResult = await getJobById(jobId);
     
-    if (!job) {
+    if (!jobResult.success || !jobResult.data || jobResult.data.user_id !== user.id) {
       return NextResponse.json(
         { error: "Job not found" },
         { status: 404 }
       );
     }
+    
+    const job = jobResult.data;
     
     // If job is completed, return the result
     if (job.status === 'completed') {
@@ -62,12 +64,15 @@ export async function GET(
       const result = await getFinishedImage(jobId, user.id);
       
       if (result.success) {
+        // Use type assertion to help TypeScript understand this is FinishedImageResponse
+        const successResult = result as { success: true, status: string, message: string, images: any[] };
+        
         // Job is completed
         return NextResponse.json({
           status: 'completed',
           success: true,
           message: 'Job completed successfully',
-          images: result.images
+          images: successResult.images
         });
       } else if (result.status === 'PROCESSING') {
         // Job is still processing
