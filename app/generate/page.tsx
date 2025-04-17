@@ -35,7 +35,7 @@ const page = async () => {
           <div className="flex flex-wrap items-center justify-center mt-6 gap-3">
             <div className="flex items-center space-x-2 bg-zinc-900/60 backdrop-blur-sm rounded-full px-5 py-2 border border-zinc-800/30 shadow-lg">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-              <span className="text-zinc-300 text-sm font-medium">AI Horde Powered</span>
+              <span className="text-zinc-300 text-sm font-medium">AI Power Grid Powered</span>
             </div>
             <div className="flex items-center space-x-2 bg-zinc-900/60 backdrop-blur-sm rounded-full px-5 py-2 border border-zinc-800/30 shadow-lg">
               <Sparkles className="w-4 h-4 text-indigo-400 mr-1" />
@@ -57,7 +57,7 @@ const page = async () => {
           </div>
           
           <div className="mt-8 text-center text-zinc-400 text-sm max-w-2xl mx-auto bg-zinc-900/30 backdrop-blur-sm rounded-xl p-4 border border-zinc-800/20">
-            <p className="mb-1">Images are generated using the AI Horde distributed network.</p>
+            <p className="mb-1">Images are generated using the AI Power Grid distributed network.</p>
             <p>Please be patient as generation times may vary based on network load.</p>
           </div>
         </div>

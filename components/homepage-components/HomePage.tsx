@@ -65,7 +65,13 @@ export default function HomePage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-black bg-dot-white/[0.2]">
+    <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black relative">
+      {/* Subtle gradient overlays */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 right-0 w-full h-[70vh] bg-gradient-to-bl from-indigo-500/10 via-purple-500/5 to-transparent blur-3xl opacity-30"></div>
+        <div className="absolute bottom-0 left-0 w-full h-[50vh] bg-gradient-to-tr from-violet-600/5 via-fuchsia-700/5 to-transparent blur-3xl opacity-20"></div>
+      </div>
+      
       <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-6xl mx-auto">
           <div className="space-y-10">
