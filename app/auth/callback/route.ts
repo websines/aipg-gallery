@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Success - redirect to the intended destination
-    return NextResponse.redirect(new URL(next, requestUrl.origin));
+    // Success - redirect to the intended destination with hardcoded origin
+    return NextResponse.redirect(new URL(next, 'https://aipg.art'));
   } catch (error) {
     console.error('Auth callback unexpected error:', error);
     

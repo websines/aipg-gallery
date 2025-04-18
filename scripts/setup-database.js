@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = "https://sb.aipowergrid.io"
+const supabaseServiceKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzI0Njk3MDAwLAogICJleHAiOiAxODgyNDYzNDAwCn0.QLdlzU1aFtE89QU6JUiz6fAuVAvihk0ONj8jy0a8BI0"
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('Missing Supabase credentials. Please check your .env file.');
