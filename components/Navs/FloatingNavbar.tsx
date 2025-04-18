@@ -57,7 +57,7 @@ const FloatingNavbar = ({ user }: { user: User | null }) => {
                 <img
                   src="/aipgweblogo.webp"
                   alt="AI Gallery"
-                  className="w-auto h-8"
+                  className="w-auto h-6 sm:h-8"
                 />
                 <span className="font-medium text-lg bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 hidden sm:inline-block">
                   AI Gallery

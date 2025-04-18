@@ -44,85 +44,26 @@ const ImageCard = ({ item, user, forModal = false }: any) => {
     likeMutate();
   };
 
-  // Helper function to check URL type
-  const getImageType = (url: string) => {
-    if (!url) return 'unknown';
-    if (url.startsWith('data:image')) return 'base64';
-    if (url.includes('cloudflarestorage.com')) return 'cloudflare';
-    if (url.startsWith('http')) return 'external';
-    return 'unknown';
-  };
-
-  const imageKitLoader = ({ src, width, quality }: any) => {
-    // Skip ImageKit processing for specific URL types
-    const imageType = getImageType(src);
-    
-    // For base64 or unknown format, return the original source
-    if (imageType === 'base64' || imageType === 'unknown') {
-      return src;
-    }
-    
-    // For Cloudflare URLs, return as is
-    if (imageType === 'cloudflare') {
-      return src;
-    }
-
-    try {
-      // For regular URLs, apply ImageKit transformation
-      // Extract the image filename from the full URL
-      const imageFilename = src.split("/").pop();
-      if (!imageFilename) return src;
-
-      // Define the transformation parameters
-      const params = [`w-${width}`];
-      if (quality) {
-        params.push(`q-${quality}`);
-      }
-      const paramsString = params.join(",");
-
-      // Construct the ImageKit URL
-      let urlEndpoint = "https://ik.imagekit.io/tkafllsgm";
-      if (urlEndpoint[urlEndpoint.length - 1] === "/") {
-        urlEndpoint = urlEndpoint.substring(0, urlEndpoint.length - 1);
-      }
-      return `${urlEndpoint}/${imageFilename}?tr=${paramsString},f-webp`;
-    } catch (error) {
-      console.error("Error in imageKitLoader:", error);
-      return src; // Return original source if there's an error
-    }
-  };
-
   // Check for valid image URL
   const imageUrl = item.image_data?.[0]?.image_url;
-  const imageType = getImageType(imageUrl);
   const hasValidImage = !!imageUrl;
 
   // The thumbnail card content that's common between modal and dialog versions
   const thumbnailCard = (
     <div className="cursor-pointer relative rounded-sm overflow-hidden group bg-white">
       {hasValidImage ? (
-        imageType === 'base64' ? (
-          // For base64 images, use standard img tag
-          <img
-            src={imageUrl}
-            className="w-full h-auto object-cover rounded-sm hover:scale-105 transition ease-in-out duration-200"
-            alt={item.positive_prompt}
-          />
-        ) : (
-          // For other URLs, use Next Image with loader
-          <Image
-            loader={imageKitLoader}
-            src={imageUrl}
-            height={0}
-            width={0}
-            loading="lazy"
-            className="w-full h-auto object-cover rounded-sm hover:scale-105 transition ease-in-out duration-200"
-            alt={item.positive_prompt}
-            quality={40}
-            layout="responsive"
-            unoptimized={imageType === 'cloudflare'}
-          />
-        )
+        // Use Next Image directly with unoptimized prop for external URLs
+        <Image
+          src={imageUrl} // Use direct URL
+          alt={item.positive_prompt}
+          height={0}
+          width={0}
+          loading="lazy"
+          className="w-full h-auto object-cover rounded-sm hover:scale-105 transition ease-in-out duration-200"
+          quality={75} // Default Next.js quality, can adjust
+          layout="responsive"
+          unoptimized={true} // Important: Tells Next.js not to optimize this external image
+        />
       ) : (
         // Fallback for missing images
         <div className="w-full h-64 flex items-center justify-center bg-zinc-800">
