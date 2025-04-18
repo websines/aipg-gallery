@@ -17,6 +17,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
+          // When setting cookies on the request, include all options
           request.cookies.set({
             name,
             value,
@@ -54,6 +55,7 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // IMPORTANT: Call getUser() to refresh the session
   await supabase.auth.getUser()
 
   return response
