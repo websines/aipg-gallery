@@ -12,11 +12,20 @@ export default function OAuthForm() {
     try {
       setIsLoading(true);
       const supabase = createSupabaseClient();
+      
+      // Create the callback URL
+      const redirectTo = new URL('/auth/callback', window.location.origin).toString();
+      
+      // Sign in with Google OAuth
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          skipBrowserRedirect: false
+          redirectTo,
+          skipBrowserRedirect: false,
+          queryParams: {
+            // Prompt user to select account, which helps avoid session conflicts
+            prompt: 'select_account'
+          }
         }
       });
       
