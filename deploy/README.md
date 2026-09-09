@@ -11,33 +11,55 @@ raise their minimum runtime without failing an older npm install.
 Backend builds use the Go 1.25 toolchain declared in `server/go.mod`; keep
 `GOTOOLCHAIN=auto` enabled so the pinned patch release is selected.
 
-## Durable media recovery candidate (not deployed)
+## Durable media recovery (deployed 2026-09-09, 01:49 UTC)
 
 Core PR #149 merged as `bf975599bdfba9fce7b9c661e98331fa3a1aafc1`.
 This Gallery candidate depends on its migration 0040 and authenticated
 `GET /v1/media/results` endpoint, plus Core PR #150's private
 `GET /v1/account/ownership` (merged as
-`4891565001ba18ca2bc4b4cfcdb818aeb7da5aeb`). Neither a merge nor local tests establish
-that production runs the new behavior. A read-only host check still resolves
-`/opt/aipg-gallery-current` to `gallery-9e7ff3dc`.
+`4891565001ba18ca2bc4b4cfcdb818aeb7da5aeb`). Core is now running that exact
+release at Alembic `0040`. Gallery PRs #25/#26/#27 are deployed together as
+`c23014761acc14f83030601b5f9bb71311ca6662`, selected through
+`/opt/aipg-gallery-current` at `gallery-c2301476`.
 
-Before activation:
+Deployment evidence:
 
-1. Take and restore-test a fresh Gallery database backup. Apply/test Gallery
-   migration `0003_pending_job_recovery` on the restored database. Migration
-   startup must retain the first two recorded checksums and existing rows.
-2. Deploy migration-compatible Core result storage and verify its running
-   processes, owner-scoped endpoint, ownership endpoint, and atomic
-   result/settlement tests. Gallery session renewal must not precede this API.
-3. Require green Gallery PostgreSQL 16 CI, race tests, dependency/security
-   checks, and a reviewed immutable release. Set `POSTGRES_ENABLED=true`;
-   charged submissions fail closed without the durable journal.
-4. Drain/gate submissions during cutover: prior process-local jobs cannot be
-   reconstructed by this migration. Never silently restart an in-flight paid
-   generation. Preserve uncertain old job IDs for manual reconciliation.
-5. Test funded first-frame and video-stage jobs, then recover their saved
-   handles after a broker restart. Verify one Core reservation, debit and
-   completion per stage; replaying an identical request must not generate again.
+- All Gallery PR checks passed: PostgreSQL 16 Go race tests, frontend, browser,
+  full-history Gitleaks, and Go/TypeScript CodeQL. The host passed the Node 22
+  production build, production-only lockfile reinstall and high/critical
+  dependency audit, plus Go race tests, vet and the pinned-toolchain build.
+- A fresh local Gallery backup was checksum-verified and restored into a
+  disposable database. The candidate's full Go race suite ran against that
+  restored database. Existing user, favorite, gallery and generation rows
+  matched before/after row-count and content hashes; the first two migration
+  checksums were unchanged. Migration 0003 created an empty journal with RLS.
+  The scratch database was dropped, and the live schema stayed on two
+  migrations throughout the proof.
+- New submissions were briefly gated. The old service invocation's journal
+  showed zero generation starts and zero terminals; that is an observation,
+  not a durable registry or a way to recover pre-release in-memory jobs.
+  After switching releases, normal startup applied migration 0003. The live
+  first two checksums still match, and the new journal was empty with RLS.
+- Both services are active. The running Go executable matches SHA-256
+  `7d8ca54b666024d7712249d11c1a66bd2fecce9b60d5d61f00ad81e1d2824601`.
+  Environment and final Nginx configuration are unchanged, the temporary gate
+  is removed, public Director returns 200, and anonymous credits/recovery
+  requests return 401.
+- The existing signed-in Google browser session loaded private creations
+  after cutover without another login. Nginx recorded successful `/api/auth/me`
+  calls after cutover. This is not proof of a wallet-first merge or a funded
+  recovery after a generation failure.
+- Protected evidence and the fresh backup are retained under
+  `/var/lib/aipg-release-proof/gallery-c2301476/`. Retention keeps active
+  `c2301476` plus patched rollback `9e7ff3dc`; pruning the older inactive build
+  returned free disk space to about 3.6 GB.
+
+Still required before declaring the paid Gallery lifecycle proven: test funded
+first-frame and video-stage jobs, then recover their saved handles after a
+broker restart. Verify one Core reservation, debit and completion per stage;
+replaying an identical request must not generate again. Test live Google/wallet
+account-merge recovery as well. No paid generation or credit grant occurred
+during this deployment, and global billing/reward gates remain unchanged.
 
 Rollback keeps the new journal and Core reservation/result columns. An older
 application cannot recover those new receipts; gate submissions and roll
